@@ -14,6 +14,7 @@ use crate::decode::EntitySpan;
 use crate::profiles::ResolvedProfile;
 use crate::runtime::{InferenceResult, LoadResult, ModelRuntime};
 
+/// Structured output for --json mode. Includes profile metadata, timings, and entities.
 #[derive(Debug, Serialize)]
 struct JsonOutput {
     profile: String,

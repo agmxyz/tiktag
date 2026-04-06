@@ -1,3 +1,4 @@
 /target
 /models/*
 !/models/profiles.toml
+.claude

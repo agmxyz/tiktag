@@ -52,9 +52,10 @@ The tool exists to let developers quickly validate model behavior on real text i
 
 - Inference is ONNX-only in this iteration.
 - Models are selected by profile from `models/profiles.toml`.
-- Profile entries must include `hf_repo`, `model_dir`, `max_tokens`, and `decode_strategy`.
+- Profile entries must include `hf_repo`, `model_dir`, `max_tokens`, and `decode_strategy`. All four are required at parse time — do not add serde defaults.
 - Profile-driven runs are the only supported workflow. Do not add ad hoc `--model-dir` overrides back in.
-- If tokenized input exceeds profile `max_tokens` (typically 512), fail with a clear error.
+- If tokenized input exceeds profile `max_tokens` (typically 512), fail with a clear error. Note that `max_tokens` includes special tokens ([CLS]/[SEP]), so effective user-text capacity is `max_tokens - 2`.
+- `config.json` must have a contiguous `id2label` map (no gaps). The loader rejects sparse maps at startup.
 - Sliding-window chunking is explicitly deferred to a later iteration.
 - The runtime contract is intentionally strict: `tokenizer.json`, `config.json`, and `onnx/model_quantized.onnx`.
 - Local model directories under `models/` are disposable developer assets and should stay ignored by git.
@@ -63,6 +64,13 @@ The tool exists to let developers quickly validate model behavior on real text i
 - The core user workflow is: define a profile, `just download-profile <name>`, then run inference.
 - `hf` CLI is a download prerequisite only. It is not part of runtime inference.
 - Keep `just run` as the default documented path. Treat `run-json` and `run-tokens` as helper recipes for tooling and debugging.
+
+### Decode strategy behavior
+
+- `generic_bio`: Standard BIO scheme. Merges consecutive tokens only when the previous is B-X and the next is I-X (same entity kind). Requires an explicit I-prefix for continuation.
+- `pii_relaxed`: Relaxed merging for the eu-pii model. Ignores BIO prefixes for continuation decisions. Allows cross-token gap merging for emails (`.@_-+`), phones (whitespace, `+-()./`), and whitespace gaps for other types. Includes a model-specific heuristic: absorbs ORGANIZATION_NAME tokens into a preceding EMAIL_ADDRESS span (the eu-pii model frequently classifies email domains as org names).
+- Some models emit bare labels (e.g. `EMAIL_ADDRESS`) without BIO prefixes. `split_label` treats these as B-tags.
+- Decode strategies are intentionally not generalizable. Each model family may have different tagging schemes, gap tolerances, and misprediction patterns. Adding a new model that doesn't fit an existing strategy requires a new `DecodeStrategy` variant and merge function in `decode.rs`. This is by design — a "general" solution would hide model-specific judgment calls.
 
 ### Logging and output conventions
 

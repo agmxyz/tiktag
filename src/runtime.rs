@@ -1,3 +1,9 @@
+// ONNX model loading and inference. This is the core runtime:
+//   1. Validate the model bundle (tokenizer.json, config.json, onnx/model_quantized.onnx)
+//   2. Load tokenizer, labels from config.json id2label, and ONNX session
+//   3. Tokenize input text, run the ONNX graph, decode entity spans from logits
+// All timings are collected into a BTreeMap for structured output.
+
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -14,6 +20,7 @@ use tokenizers::Tokenizer;
 use crate::decode::{DecodeStrategy, EntitySpan, argmax_label_indices, decode_entities};
 use crate::profiles::ResolvedProfile;
 
+/// Every model bundle must have these three files present.
 const REQUIRED_MODEL_FILES: &[&str] =
     &["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
 
@@ -30,6 +37,8 @@ pub struct InferenceResult {
     pub timings_ms: BTreeMap<String, f64>,
 }
 
+/// Holds everything needed to run inference: the tokenizer, label map, ONNX session,
+/// and profile settings. Created via ModelRuntime::load().
 #[derive(Debug)]
 pub struct ModelRuntime {
     tokenizer: Tokenizer,
@@ -38,6 +47,7 @@ pub struct ModelRuntime {
     profile_name: String,
     max_tokens: usize,
     decode_strategy: DecodeStrategy,
+    /// BERT-family models need token_type_ids; DistilBERT doesn't. Detected at load time.
     has_token_type_ids: bool,
 }
 
@@ -65,6 +75,8 @@ impl ModelRuntime {
                 tokenizer_path.display()
             )
         })?;
+        // Disable the tokenizer's built-in truncation so we can enforce max_tokens ourselves
+        // with a clear error message instead of silently dropping tokens.
         tokenizer.with_truncation(None).map_err(|err| {
             anyhow!(
                 "failed to disable truncation in tokenizer {}: {err}",
@@ -91,6 +103,8 @@ impl ModelRuntime {
             .context("failed to create ONNX Runtime session")?;
         record_timing(&mut timings_ms, "load.session", session_start);
 
+        // Some ONNX exports (e.g. BERT-family) require a token_type_ids input; others
+        // (e.g. DistilBERT) don't. Probe the session graph to decide at load time.
         let has_token_type_ids = session
             .inputs()
             .iter()
@@ -203,6 +217,8 @@ impl ModelRuntime {
     }
 }
 
+/// Parse config.json's id2label map into a contiguous Vec<String> indexed by label id.
+/// Rejects sparse maps (gaps would create silent decode bugs).
 fn load_labels(config_path: &Path) -> anyhow::Result<Vec<String>> {
     let config_text = fs::read_to_string(config_path)
         .with_context(|| format!("failed to read {}", config_path.display()))?;
@@ -234,6 +250,12 @@ fn load_labels(config_path: &Path) -> anyhow::Result<Vec<String>> {
     let mut ordered = vec![String::new(); max_index + 1];
     for (index, label) in labels {
         ordered[index] = label;
+    }
+
+    // Guard against sparse id2label maps: a gap would produce an empty-string label
+    // that silently passes "O" checks in decode and creates garbage entities.
+    if let Some(gap) = ordered.iter().position(|l| l.is_empty()) {
+        bail!("id2label has a gap at index {gap} — all indices from 0 to {max_index} must be present");
     }
 
     Ok(ordered)
@@ -270,10 +292,7 @@ fn ensure_sequence_within_limit(
 ) -> anyhow::Result<()> {
     if seq_len > max_tokens {
         bail!(
-            "profile '{}' tokenized to {} tokens, exceeding max_tokens={}. This v1 does not support chunking yet; shorten the input.",
-            profile_name,
-            seq_len,
-            max_tokens
+            "profile '{profile_name}' tokenized to {seq_len} tokens, exceeding max_tokens={max_tokens}. This v1 does not support chunking yet; shorten the input."
         );
     }
 

@@ -1,4 +1,4 @@
-# lil-inference
+# tiktag
 
 CLI for testing quantized ONNX token-classification models.
 
@@ -96,6 +96,34 @@ Then:
 just download-profile some_model
 just run "John Doe lives in Paris" some_model
 ```
+
+## Adding a new model
+
+### If the model fits an existing decode strategy
+
+If the model uses standard BIO tagging (`B-PER`, `I-PER`, ...), use `generic_bio`. If it matches the eu-pii label set, use `pii_relaxed`.
+
+1. Add a profile to `models/profiles.toml`
+2. `just download-profile <name>`
+3. `just run "test input" <name>`
+
+No code changes needed.
+
+### If the model needs a new decode strategy
+
+The merge logic that combines token-level predictions into entity spans is model-specific. It depends on the tagging scheme (BIO, BIOES, bare labels), gap tolerance between tokens, and any misprediction patterns worth compensating for. These aren't declared by the model — you discover them by inspecting the label set and testing.
+
+All changes live in `src/decode.rs`:
+
+1. Add a variant to the `DecodeStrategy` enum
+2. Write a `merged_label_<name>` function (see `merged_label_generic` and `merged_label_pii_relaxed` as examples)
+3. Add the new arm to the `merged_label` match
+4. Add the variant to the `Display` impl
+5. Add tests for the new merge behavior
+6. Add a profile to `models/profiles.toml` referencing the new strategy
+7. `just test`
+
+Use `just run-tokens "..." <name>` to inspect token-level predictions while developing merge rules.
 
 ## Current Limits
 

@@ -1,3 +1,7 @@
+// Profile loading and resolution. Profiles live in a TOML file (models/profiles.toml)
+// and define which model to load, its token limit, and decode strategy.
+// The file has a default_profile key plus a [profiles.<name>] table per model.
+
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -7,6 +11,7 @@ use serde::Deserialize;
 
 use crate::decode::DecodeStrategy;
 
+/// A profile after validation and path resolution — ready for the runtime.
 #[derive(Debug, Clone)]
 pub struct ResolvedProfile {
     pub name: String,
@@ -16,6 +21,8 @@ pub struct ResolvedProfile {
     pub decode_strategy: DecodeStrategy,
 }
 
+/// Parsed profiles file. Holds the base directory (for resolving relative model_dir paths),
+/// the default profile name, and all parsed profile specs.
 #[derive(Debug)]
 pub struct Profiles {
     base_dir: PathBuf,
@@ -23,6 +30,7 @@ pub struct Profiles {
     profiles: BTreeMap<String, ProfileSpec>,
 }
 
+/// Internal validated spec — mirrors ProfileRaw but lives past parsing.
 #[derive(Debug, Clone)]
 struct ProfileSpec {
     hf_repo: String,
@@ -31,6 +39,7 @@ struct ProfileSpec {
     decode_strategy: DecodeStrategy,
 }
 
+/// Raw serde shape — maps 1:1 to the TOML on disk. No defaults allowed.
 #[derive(Debug, Deserialize)]
 struct ProfilesFileRaw {
     default_profile: String,
@@ -41,9 +50,7 @@ struct ProfilesFileRaw {
 struct ProfileRaw {
     hf_repo: String,
     model_dir: PathBuf,
-    #[serde(default = "default_max_tokens")]
     max_tokens: usize,
-    #[serde(default)]
     decode_strategy: DecodeStrategy,
 }
 
@@ -117,10 +124,7 @@ impl Profiles {
     }
 }
 
-fn default_max_tokens() -> usize {
-    512
-}
-
+/// Resolve model_dir: absolute paths pass through, relative ones are joined to base_dir.
 fn resolve_profile_model_dir(base_dir: &Path, model_dir: &Path) -> PathBuf {
     if model_dir.is_absolute() {
         model_dir.to_path_buf()
@@ -175,6 +179,8 @@ default_profile = "missing"
 [profiles.eu_pii]
 hf_repo = "bardsai/eu-pii-anonimization-multilang"
 model_dir = "eu-pii-anonimization-multilang"
+max_tokens = 512
+decode_strategy = "pii_relaxed"
 "#,
         )
         .expect_err("missing default profile should fail");
@@ -193,6 +199,7 @@ default_profile = "eu_pii"
 hf_repo = "bardsai/eu-pii-anonimization-multilang"
 model_dir = "eu-pii-anonimization-multilang"
 max_tokens = 0
+decode_strategy = "pii_relaxed"
 "#,
         )
         .expect_err("zero max_tokens should fail");
@@ -210,6 +217,8 @@ default_profile = "eu_pii"
 [profiles.eu_pii]
 hf_repo = "bardsai/eu-pii-anonimization-multilang"
 model_dir = "eu-pii-anonimization-multilang"
+max_tokens = 512
+decode_strategy = "pii_relaxed"
 "#,
         )
         .expect("profiles should parse");
@@ -230,6 +239,8 @@ default_profile = "eu_pii"
 
 [profiles.eu_pii]
 model_dir = "eu-pii-anonimization-multilang"
+max_tokens = 512
+decode_strategy = "pii_relaxed"
 "#,
         )
         .expect_err("missing hf_repo should fail");
