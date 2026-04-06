@@ -109,6 +109,3 @@ download-default profiles=default_profiles:
     fi
 
     just download-profile "$default_profile" "$profiles"
-
-search-supported query="multilingual ner onnx" limit="100":
-    @hf models ls --search "{{ query }}" --limit {{ limit }} --expand siblings,pipeline_tag,library_name,downloads --format json | jq -r '.[] | select(.pipeline_tag=="token-classification") | . as $m | [(.siblings[]?.rfilename)] as $files | select(($files|index("config.json")) and ($files|index("tokenizer.json")) and ($files|index("onnx/model_quantized.onnx"))) | "\($m.id)\tdownloads=\($m.downloads // 0)\tlibrary=\($m.library_name // "unknown")"'

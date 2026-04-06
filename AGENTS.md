@@ -60,7 +60,9 @@ The tool exists to let developers quickly validate model behavior on real text i
 - Local model directories under `models/` are disposable developer assets and should stay ignored by git.
 - Keep the secondary profile name aligned to the source model (`xenova_ner_hrl`) to avoid alias confusion.
 - Restore local assets with `just download-default` or `just download-profile <name>`.
-- Use `just search-supported` to find Hugging Face repos that match the current runtime contract.
+- The core user workflow is: define a profile, `just download-profile <name>`, then run inference.
+- `hf` CLI is a download prerequisite only. It is not part of runtime inference.
+- Keep `just run` as the default documented path. Treat `run-json` and `run-tokens` as helper recipes for tooling and debugging.
 
 ### Logging and output conventions
 

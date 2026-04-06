@@ -1,31 +1,35 @@
 # lil-inference
 
-Pragmatic CLI for testing quantized ONNX token-classification models in Rust.
+CLI for testing quantized ONNX token-classification models.
 
-## Quick Start
+## Workflow
 
-1. Build:
-   - `just build`
-2. Restore the default model:
-   - `just download-default`
-3. Run the default profile:
-   - `just sample`
-   - `just run "Contact Maria at maria@example.com"`
+1. Define a profile in `models/profiles.toml`
+2. Download the model with `just download-profile <name>`
+3. Run inference with `just run ... <name>`
 
-## Profiles
+Use `run` as the default path. `run-json` and `run-tokens` are helper commands for tooling and debugging.
+
+## Prerequisites
+
+- Rust toolchain
+- `just`
+- `hf` CLI, for downloading models
+
+## Profile Contract
 
 Profiles live in `models/profiles.toml`.
 
-- `default_profile` selects the default model.
-- Each profile defines:
-  - `hf_repo`
-  - `model_dir`
-  - `max_tokens`
-  - `decode_strategy`
+Each profile must define:
+
+- `hf_repo`
+- `model_dir`
+- `max_tokens`
+- `decode_strategy`
 
 `model_dir` is resolved relative to the profile file directory.
 
-Required files per model bundle:
+Each local model bundle must contain:
 
 - `tokenizer.json`
 - `config.json`
@@ -33,43 +37,69 @@ Required files per model bundle:
 
 Model directories under `models/` are local developer assets. They are ignored by git. `models/profiles.toml` stays tracked.
 
-## Commands
+## Current Profiles
 
-- Run human output:
-  - `just run "John Doe lives in Paris"`
-  - `just run "John Doe lives in Paris" xenova_ner_hrl`
-- Run JSON output:
-  - `just run-json "John Doe lives in Paris" xenova_ner_hrl`
-- Show token debug output:
-  - `just run-tokens "John Doe lives in Paris" xenova_ner_hrl`
-- Run tests:
-  - `just test`
+### `eu_pii`
 
-## Model Restore
+- Hugging Face: `bardsai/eu-pii-anonimization-multilang`
+- Decode strategy: `pii_relaxed`
+- Max tokens: `512`
 
-Restore a named profile from Hugging Face:
+### `xenova_ner_hrl`
 
+- Hugging Face: `Xenova/distilbert-base-multilingual-cased-ner-hrl`
+- Decode strategy: `generic_bio`
+- Max tokens: `512`
+
+## How to use
+
+Build:
+
+- `just build`
+
+Download:
+
+- `just download-default`
 - `just download-profile eu_pii`
 - `just download-profile xenova_ner_hrl`
 
-The download command reads `hf_repo` and `model_dir` from `models/profiles.toml`. Keep profiles as the single source of truth.
+Run:
 
-## Find Compatible Models
+- `just run "Contact Maria at maria@example.com"`
+- `just run "John Doe lives in Paris" xenova_ner_hrl`
 
-Search for repos that match the current runtime contract:
+Helpers:
 
-- `just search-supported`
-- `just search-supported "multilingual ner onnx" 200`
+- `just sample`
+- `just run-json "John Doe lives in Paris" xenova_ner_hrl`
+- `just run-tokens "John Doe lives in Paris" xenova_ner_hrl`
 
-Current filter keeps token-classification models with:
+`run-json` is for machine-readable output. `run-tokens` is for token-level debugging.
 
-- `config.json`
-- `tokenizer.json`
-- `onnx/model_quantized.onnx`
+Test:
+
+- `just test`
+
+## Example Profile
+
+```toml
+[profiles.some_model]
+hf_repo = "org/model-name"
+model_dir = "some-model"
+max_tokens = 512
+decode_strategy = "generic_bio"
+```
+
+Then:
+
+```bash
+just download-profile some_model
+just run "John Doe lives in Paris" some_model
+```
 
 ## Current Limits
 
-- ONNX-only inference.
-- Quantized ONNX bundle contract is strict by design.
-- If tokenized input exceeds `max_tokens`, the CLI fails with a clear error.
-- Sliding-window chunking is deferred to a later iteration.
+- ONNX-only inference
+- Strict quantized ONNX bundle contract
+- No chunking yet
+- If tokenized input exceeds `max_tokens`, the CLI fails with a clear error
