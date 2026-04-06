@@ -14,6 +14,9 @@ check:
 test:
     cargo test
 
+test-fixtures:
+    cargo test fixture_regression -- --ignored --nocapture
+
 fmt:
     cargo fmt
 

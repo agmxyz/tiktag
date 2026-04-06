@@ -1,0 +1,27 @@
+profile = "xenova_ner_hrl"
+min_window_count = 3
+
+[[expected]]
+label = "PER"
+text = "Laura Gómez Serrano"
+count = 18
+
+[[expected]]
+label = "LOC"
+text = "Barcelona"
+count = 18
+
+[[expected]]
+label = "ORG"
+text = "Nordlicht Systeme GmbH"
+count = 18
+
+[[expected]]
+label = "PER"
+text = "Lukas Schneider"
+count = 18
+
+[[expected]]
+label = "LOC"
+text = "Madrid"
+count = 18

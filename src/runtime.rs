@@ -16,9 +16,11 @@ use ort::session::{Session, builder::GraphOptimizationLevel};
 use ort::value::TensorRef;
 use serde_json::Value;
 use tokenizers::Tokenizer;
+use tokenizers::utils::truncation::{TruncationDirection, TruncationParams, TruncationStrategy};
 
 use crate::decode::{DecodeStrategy, EntitySpan, argmax_label_indices, decode_entities};
 use crate::profiles::ResolvedProfile;
+use crate::window::WindowEntities;
 
 /// Every model bundle must have these three files present.
 const REQUIRED_MODEL_FILES: &[&str] =
@@ -34,6 +36,7 @@ pub struct LoadResult {
 pub struct InferenceResult {
     pub entities: Vec<EntitySpan>,
     pub sequence_len: usize,
+    pub window_count: usize,
     pub timings_ms: BTreeMap<String, f64>,
 }
 
@@ -46,6 +49,7 @@ pub struct ModelRuntime {
     session: Session,
     profile_name: String,
     max_tokens: usize,
+    overlap_tokens: usize,
     decode_strategy: DecodeStrategy,
     /// BERT-family models need token_type_ids; DistilBERT doesn't. Detected at load time.
     has_token_type_ids: bool,
@@ -119,6 +123,7 @@ impl ModelRuntime {
                 session,
                 profile_name: profile.name.clone(),
                 max_tokens: profile.max_tokens,
+                overlap_tokens: profile.overlap_tokens,
                 decode_strategy: profile.decode_strategy,
                 has_token_type_ids,
             },
@@ -131,6 +136,7 @@ impl ModelRuntime {
         let total_start = Instant::now();
         info!("running inference on {} input bytes", text.len());
 
+        // Tokenize without truncation to measure true sequence length.
         let tokenize_start = Instant::now();
         let encoding = self
             .tokenizer
@@ -140,8 +146,54 @@ impl ModelRuntime {
         if seq_len == 0 {
             bail!("tokenizer returned an empty encoding");
         }
-        ensure_sequence_within_limit(&self.profile_name, seq_len, self.max_tokens)?;
+        record_timing(&mut timings_ms, "infer.tokenize", tokenize_start);
+        info!("encoded sequence length: {seq_len}");
 
+        if seq_len <= self.max_tokens {
+            // Fast path: single window, identical to pre-windowing behavior.
+            let entities =
+                self.infer_single_encoding(text, &encoding, show_tokens, &mut timings_ms)?;
+            record_timing(&mut timings_ms, "infer.total", total_start);
+            Ok(InferenceResult {
+                entities,
+                sequence_len: seq_len,
+                window_count: 1,
+                timings_ms,
+            })
+        } else if self.overlap_tokens == 0 {
+            // Windowing disabled — preserve fail-fast behavior.
+            ensure_sequence_within_limit(&self.profile_name, seq_len, self.max_tokens)?;
+            unreachable!()
+        } else {
+            // Sliding-window inference.
+            info!(
+                "input exceeds max_tokens={}, using sliding window (overlap_tokens={})",
+                self.max_tokens, self.overlap_tokens
+            );
+            let (entities, window_count) =
+                self.infer_windowed(text, show_tokens, &mut timings_ms)?;
+            record_timing(&mut timings_ms, "infer.total", total_start);
+            Ok(InferenceResult {
+                entities,
+                sequence_len: seq_len,
+                window_count,
+                timings_ms,
+            })
+        }
+    }
+
+    /// Run ONNX inference on a single encoding and decode entities.
+    /// Shared by both the single-pass fast path and each window of the windowed path.
+    fn infer_single_encoding(
+        &mut self,
+        text: &str,
+        encoding: &tokenizers::Encoding,
+        show_tokens: bool,
+        timings_ms: &mut BTreeMap<String, f64>,
+    ) -> anyhow::Result<Vec<EntitySpan>> {
+        let seq_len = encoding.len();
+
+        let prepare_start = Instant::now();
         let input_ids = Array2::from_shape_vec(
             (1, seq_len),
             encoding.get_ids().iter().map(|&id| i64::from(id)).collect(),
@@ -154,12 +206,7 @@ impl ModelRuntime {
                 .map(|&mask| i64::from(mask))
                 .collect(),
         )?;
-        record_timing(
-            &mut timings_ms,
-            "infer.tokenize_and_prepare",
-            tokenize_start,
-        );
-        info!("encoded sequence length: {seq_len}");
+        record_timing(timings_ms, "infer.prepare", prepare_start);
 
         let run_start = Instant::now();
         let outputs = if self.has_token_type_ids {
@@ -175,7 +222,7 @@ impl ModelRuntime {
                 "attention_mask" => TensorRef::from_array_view(attention_mask.view())?,
             })?
         };
-        record_timing(&mut timings_ms, "infer.onnx", run_start);
+        record_timing(timings_ms, "infer.onnx", run_start);
 
         let logits = outputs[0]
             .try_extract_array::<f32>()
@@ -200,20 +247,80 @@ impl ModelRuntime {
         let decode_start = Instant::now();
         let entities = decode_entities(
             text,
-            &encoding,
+            encoding,
             &predictions,
             &self.labels,
             self.decode_strategy,
         );
-        record_timing(&mut timings_ms, "infer.decode", decode_start);
+        record_timing(timings_ms, "infer.decode", decode_start);
 
-        record_timing(&mut timings_ms, "infer.total", total_start);
+        Ok(entities)
+    }
 
-        Ok(InferenceResult {
-            entities,
-            sequence_len: seq_len,
-            timings_ms,
-        })
+    /// Sliding-window inference: re-tokenize with truncation+stride, run each window
+    /// through ONNX, stitch entities across windows.
+    fn infer_windowed(
+        &mut self,
+        text: &str,
+        show_tokens: bool,
+        timings_ms: &mut BTreeMap<String, f64>,
+    ) -> anyhow::Result<(Vec<EntitySpan>, usize)> {
+        // Clone tokenizer and enable truncation with stride for overflow windows.
+        let retokenize_start = Instant::now();
+        let mut windowed_tokenizer = self.tokenizer.clone();
+        windowed_tokenizer
+            .with_truncation(Some(TruncationParams {
+                max_length: self.max_tokens,
+                stride: self.overlap_tokens,
+                strategy: TruncationStrategy::OnlyFirst,
+                direction: TruncationDirection::Right,
+            }))
+            .map_err(|err| anyhow!("failed to configure windowed truncation: {err}"))?;
+
+        let mut primary = windowed_tokenizer
+            .encode(text, true)
+            .map_err(|err| anyhow!("windowed tokenization failed: {err}"))?;
+        let overflow = primary.take_overflowing();
+
+        let mut encodings = Vec::with_capacity(1 + overflow.len());
+        encodings.push(primary);
+        encodings.extend(overflow);
+        let window_count = encodings.len();
+        record_timing(timings_ms, "infer.windowed_tokenize", retokenize_start);
+        info!("sliding window: {window_count} windows");
+
+        // Run each window through ONNX and collect entities with emit regions.
+        let mut window_results = Vec::with_capacity(window_count);
+        for (i, encoding) in encodings.iter().enumerate() {
+            if show_tokens {
+                debug!("--- window {i} ---");
+            }
+
+            let window_start = Instant::now();
+            let entities = self.infer_single_encoding(text, encoding, show_tokens, timings_ms)?;
+            record_timing(timings_ms, &format!("infer.window_{i}"), window_start);
+
+            let (emit_start, emit_end) =
+                compute_emit_region(text, encoding, i, window_count, self.overlap_tokens);
+            info!(
+                "window {i}: {} entities, emit region [{emit_start}..{emit_end})",
+                entities.len()
+            );
+
+            window_results.push(WindowEntities {
+                entities,
+                emit_start,
+                emit_end,
+            });
+        }
+
+        // Stitch entities across windows.
+        let stitch_start = Instant::now();
+        let entities = crate::window::stitch(window_results);
+        record_timing(timings_ms, "infer.stitch", stitch_start);
+        info!("stitched to {} entities", entities.len());
+
+        Ok((entities, window_count))
     }
 }
 
@@ -255,7 +362,9 @@ fn load_labels(config_path: &Path) -> anyhow::Result<Vec<String>> {
     // Guard against sparse id2label maps: a gap would produce an empty-string label
     // that silently passes "O" checks in decode and creates garbage entities.
     if let Some(gap) = ordered.iter().position(|l| l.is_empty()) {
-        bail!("id2label has a gap at index {gap} — all indices from 0 to {max_index} must be present");
+        bail!(
+            "id2label has a gap at index {gap} — all indices from 0 to {max_index} must be present"
+        );
     }
 
     Ok(ordered)
@@ -285,6 +394,70 @@ fn validate_model_bundle(model_dir: &Path) -> anyhow::Result<()> {
     );
 }
 
+/// Compute the byte range where a window's predictions are authoritative.
+///
+/// Uses the same symmetric overlap trimming as windowed-span: trim `overlap/2` tokens
+/// from the left (except first window), `overlap - overlap/2` from the right (except last).
+/// The emit region is defined by the byte offsets of the resulting usable token boundaries.
+fn compute_emit_region(
+    text: &str,
+    encoding: &tokenizers::Encoding,
+    window_index: usize,
+    window_count: usize,
+    overlap_tokens: usize,
+) -> (usize, usize) {
+    let offsets = encoding.get_offsets();
+    let special_mask = encoding.get_special_tokens_mask();
+
+    // Usable tokens: non-special, non-zero-length.
+    let usable: Vec<(usize, usize)> = offsets
+        .iter()
+        .zip(special_mask.iter())
+        .filter_map(|(&(start, end), &special)| {
+            if special == 0 && end > start {
+                Some((start, end))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if usable.is_empty() {
+        return (0, text.len());
+    }
+
+    let left_trim = if window_index == 0 {
+        0
+    } else {
+        overlap_tokens / 2
+    };
+    let right_trim = if window_index + 1 == window_count {
+        0
+    } else {
+        overlap_tokens - overlap_tokens / 2
+    };
+
+    let emit_start_idx = left_trim.min(usable.len().saturating_sub(1));
+    let emit_end_idx = usable
+        .len()
+        .saturating_sub(right_trim)
+        .max(emit_start_idx + 1)
+        .min(usable.len());
+
+    let emit_start = if window_index == 0 {
+        0
+    } else {
+        usable[emit_start_idx].0
+    };
+    let emit_end = if window_index + 1 == window_count {
+        text.len()
+    } else {
+        usable[emit_end_idx - 1].1
+    };
+
+    (emit_start, emit_end)
+}
+
 fn ensure_sequence_within_limit(
     profile_name: &str,
     seq_len: usize,
@@ -292,7 +465,8 @@ fn ensure_sequence_within_limit(
 ) -> anyhow::Result<()> {
     if seq_len > max_tokens {
         bail!(
-            "profile '{profile_name}' tokenized to {seq_len} tokens, exceeding max_tokens={max_tokens}. This v1 does not support chunking yet; shorten the input."
+            "profile '{profile_name}' tokenized to {seq_len} tokens, exceeding max_tokens={max_tokens}. \
+             Set overlap_tokens > 0 in the profile to enable sliding-window inference, or shorten the input."
         );
     }
 
@@ -344,6 +518,8 @@ mod tests {
         let err = ensure_sequence_within_limit("eu_pii", 513, 512)
             .expect_err("limit overflow should fail");
 
-        assert!(err.to_string().contains("exceeding max_tokens=512"));
+        let message = err.to_string();
+        assert!(message.contains("exceeding max_tokens=512"));
+        assert!(message.contains("overlap_tokens"));
     }
 }

@@ -1,7 +1,10 @@
 mod cli;
 mod decode;
+#[cfg(test)]
+mod fixture_tests;
 mod profiles;
 mod runtime;
+mod window;
 
 use std::collections::BTreeMap;
 
@@ -21,8 +24,10 @@ struct JsonOutput {
     hf_repo: String,
     model_dir: String,
     max_tokens: usize,
+    overlap_tokens: usize,
     decode_strategy: crate::decode::DecodeStrategy,
     sequence_len: usize,
+    window_count: usize,
     timings_ms: BTreeMap<String, f64>,
     entities: Vec<EntitySpan>,
 }
@@ -40,11 +45,12 @@ fn main() -> anyhow::Result<()> {
     let resolved = profiles.resolve(args.profile.as_deref())?;
 
     info!(
-        "selected profile='{}' hf_repo='{}' model_dir='{}' max_tokens={} decode_strategy={}",
+        "selected profile='{}' hf_repo='{}' model_dir='{}' max_tokens={} overlap_tokens={} decode_strategy={}",
         resolved.name,
         resolved.hf_repo,
         resolved.model_dir.display(),
         resolved.max_tokens,
+        resolved.overlap_tokens,
         resolved.decode_strategy
     );
 
@@ -55,6 +61,7 @@ fn main() -> anyhow::Result<()> {
     let InferenceResult {
         entities,
         sequence_len,
+        window_count,
         timings_ms: infer_timings_ms,
     } = runtime.infer(&args.text, args.show_tokens)?;
 
@@ -62,15 +69,18 @@ fn main() -> anyhow::Result<()> {
     timings_ms.extend(infer_timings_ms);
 
     if args.json {
-        print_json(&resolved, sequence_len, timings_ms, entities)?;
+        print_json(&resolved, sequence_len, window_count, timings_ms, entities)?;
     } else {
-        print_human(&entities);
+        print_human(&entities, window_count);
     }
 
     Ok(())
 }
 
-fn print_human(entities: &[EntitySpan]) {
+fn print_human(entities: &[EntitySpan], window_count: usize) {
+    if window_count > 1 {
+        println!("({window_count} windows)");
+    }
     if entities.is_empty() {
         println!("No entities detected.");
         return;
@@ -87,6 +97,7 @@ fn print_human(entities: &[EntitySpan]) {
 fn print_json(
     resolved: &ResolvedProfile,
     sequence_len: usize,
+    window_count: usize,
     timings_ms: BTreeMap<String, f64>,
     entities: Vec<EntitySpan>,
 ) -> anyhow::Result<()> {
@@ -95,8 +106,10 @@ fn print_json(
         hf_repo: resolved.hf_repo.clone(),
         model_dir: resolved.model_dir.display().to_string(),
         max_tokens: resolved.max_tokens,
+        overlap_tokens: resolved.overlap_tokens,
         decode_strategy: resolved.decode_strategy,
         sequence_len,
+        window_count,
         timings_ms,
         entities,
     };

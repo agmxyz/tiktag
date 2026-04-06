@@ -12,6 +12,7 @@ default_profile = "eu_pii"
 hf_repo = "bardsai/eu-pii-anonimization-multilang"
 model_dir = "eu-pii-anonimization-multilang"
 max_tokens = 512
+overlap_tokens = 128
 decode_strategy = "pii_relaxed"
 
 # Xenova ONNX export for multilingual DistilBERT NER.
@@ -19,4 +20,5 @@ decode_strategy = "pii_relaxed"
 hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
 model_dir = "distilbert-base-multilingual-cased-ner-hrl-onnx"
 max_tokens = 512
+overlap_tokens = 128
 decode_strategy = "generic_bio"

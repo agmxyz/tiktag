@@ -18,6 +18,7 @@ pub struct ResolvedProfile {
     pub hf_repo: String,
     pub model_dir: PathBuf,
     pub max_tokens: usize,
+    pub overlap_tokens: usize,
     pub decode_strategy: DecodeStrategy,
 }
 
@@ -36,6 +37,7 @@ struct ProfileSpec {
     hf_repo: String,
     model_dir: PathBuf,
     max_tokens: usize,
+    overlap_tokens: usize,
     decode_strategy: DecodeStrategy,
 }
 
@@ -51,6 +53,7 @@ struct ProfileRaw {
     hf_repo: String,
     model_dir: PathBuf,
     max_tokens: usize,
+    overlap_tokens: usize,
     decode_strategy: DecodeStrategy,
 }
 
@@ -78,6 +81,7 @@ impl Profiles {
             hf_repo: spec.hf_repo.clone(),
             model_dir: resolve_profile_model_dir(&self.base_dir, &spec.model_dir),
             max_tokens: spec.max_tokens,
+            overlap_tokens: spec.overlap_tokens,
             decode_strategy: spec.decode_strategy,
         })
     }
@@ -104,6 +108,14 @@ impl Profiles {
             if spec.max_tokens == 0 {
                 bail!("profile '{name}' has invalid max_tokens=0");
             }
+            let content_tokens = spec.max_tokens.saturating_sub(2);
+            if spec.overlap_tokens >= content_tokens {
+                bail!(
+                    "profile '{name}' has overlap_tokens={} which must be less than max_tokens - 2 ({})",
+                    spec.overlap_tokens,
+                    content_tokens
+                );
+            }
 
             profiles.insert(
                 name,
@@ -111,6 +123,7 @@ impl Profiles {
                     hf_repo: spec.hf_repo,
                     model_dir: spec.model_dir,
                     max_tokens: spec.max_tokens,
+                    overlap_tokens: spec.overlap_tokens,
                     decode_strategy: spec.decode_strategy,
                 },
             );
@@ -151,6 +164,7 @@ default_profile = "eu_pii"
 hf_repo = "bardsai/eu-pii-anonimization-multilang"
 model_dir = "eu-pii-anonimization-multilang"
 max_tokens = 512
+overlap_tokens = 128
 decode_strategy = "pii_relaxed"
 "#,
         )
@@ -166,6 +180,7 @@ decode_strategy = "pii_relaxed"
             PathBuf::from("models/eu-pii-anonimization-multilang")
         );
         assert_eq!(resolved.max_tokens, 512);
+        assert_eq!(resolved.overlap_tokens, 128);
         assert_eq!(resolved.decode_strategy, DecodeStrategy::PiiRelaxed);
     }
 
@@ -180,6 +195,7 @@ default_profile = "missing"
 hf_repo = "bardsai/eu-pii-anonimization-multilang"
 model_dir = "eu-pii-anonimization-multilang"
 max_tokens = 512
+overlap_tokens = 128
 decode_strategy = "pii_relaxed"
 "#,
         )
@@ -199,6 +215,7 @@ default_profile = "eu_pii"
 hf_repo = "bardsai/eu-pii-anonimization-multilang"
 model_dir = "eu-pii-anonimization-multilang"
 max_tokens = 0
+overlap_tokens = 0
 decode_strategy = "pii_relaxed"
 "#,
         )
@@ -218,6 +235,7 @@ default_profile = "eu_pii"
 hf_repo = "bardsai/eu-pii-anonimization-multilang"
 model_dir = "eu-pii-anonimization-multilang"
 max_tokens = 512
+overlap_tokens = 128
 decode_strategy = "pii_relaxed"
 "#,
         )
@@ -240,11 +258,32 @@ default_profile = "eu_pii"
 [profiles.eu_pii]
 model_dir = "eu-pii-anonimization-multilang"
 max_tokens = 512
+overlap_tokens = 128
 decode_strategy = "pii_relaxed"
 "#,
         )
         .expect_err("missing hf_repo should fail");
 
         assert!(err.to_string().contains("missing field `hf_repo`"));
+    }
+
+    #[test]
+    fn rejects_overlap_exceeding_limit() {
+        let err = Profiles::from_raw(
+            &PathBuf::from("models"),
+            r#"
+default_profile = "eu_pii"
+
+[profiles.eu_pii]
+hf_repo = "bardsai/eu-pii-anonimization-multilang"
+model_dir = "eu-pii-anonimization-multilang"
+max_tokens = 512
+overlap_tokens = 510
+decode_strategy = "pii_relaxed"
+"#,
+        )
+        .expect_err("overlap >= max_tokens - 2 should fail");
+
+        assert!(err.to_string().contains("overlap_tokens=510"));
     }
 }

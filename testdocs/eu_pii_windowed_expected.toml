@@ -1,0 +1,32 @@
+profile = "eu_pii"
+min_window_count = 3
+
+[[expected]]
+label = "PERSON_NAME"
+text = "Laura Gómez Serrano"
+count = 9
+
+[[expected]]
+label = "PERSON_NAME"
+text = "Lukas Schneider"
+count = 9
+
+[[expected]]
+label = "PHONE_NUMBER"
+text = "+34 612 45 78 90"
+count = 9
+
+[[expected]]
+label = "ORGANIZATION_NAME"
+text = "Nordlicht Systeme GmbH"
+count = 9
+
+[[expected]]
+label = "PERSON_NAME"
+text = "Javier Ortega Ruiz"
+count = 9
+
+[[expected]]
+label = "PHONE_NUMBER"
+text = "+49 221 7789 4400"
+count = 9

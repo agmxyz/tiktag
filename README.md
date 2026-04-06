@@ -25,6 +25,7 @@ Each profile must define:
 - `hf_repo`
 - `model_dir`
 - `max_tokens`
+- `overlap_tokens`
 - `decode_strategy`
 
 `model_dir` is resolved relative to the profile file directory.
@@ -79,6 +80,9 @@ Helpers:
 Test:
 
 - `just test`
+- `just test-fixtures`
+
+Fixture tests in `testdocs/` are profile-aligned and intentionally partial: they assert stable repeated entities for each model profile and verify long inputs use multiple windows.
 
 ## Example Profile
 
@@ -87,6 +91,7 @@ Test:
 hf_repo = "org/model-name"
 model_dir = "some-model"
 max_tokens = 512
+overlap_tokens = 128
 decode_strategy = "generic_bio"
 ```
 
@@ -129,5 +134,5 @@ Use `just run-tokens "..." <name>` to inspect token-level predictions while deve
 
 - ONNX-only inference
 - Strict quantized ONNX bundle contract
-- No chunking yet
-- If tokenized input exceeds `max_tokens`, the CLI fails with a clear error
+- Sliding-window inference requires `overlap_tokens > 0`
+- Fixture regression tests require local downloaded model assets
