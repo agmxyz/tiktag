@@ -1,0 +1,22 @@
+# Profile file for local model testing.
+# Paths are relative to this file's directory (`models/`).
+# The runtime contract is intentionally strict.
+# Each profile must point to a local directory containing:
+# - tokenizer.json
+# - config.json
+# - onnx/model_quantized.onnx
+
+default_profile = "eu_pii"
+
+[profiles.eu_pii]
+hf_repo = "bardsai/eu-pii-anonimization-multilang"
+model_dir = "eu-pii-anonimization-multilang"
+max_tokens = 512
+decode_strategy = "pii_relaxed"
+
+# Xenova ONNX export for multilingual DistilBERT NER.
+[profiles.xenova_ner_hrl]
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl-onnx"
+max_tokens = 512
+decode_strategy = "generic_bio"
