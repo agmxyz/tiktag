@@ -1,30 +1,30 @@
 profile = "eu_pii"
-min_window_count = 2
+min_window_count = 8
 
 [[expected_replacements]]
 placeholder = "[PERSON_1]"
 original = "Laura Gómez Serrano"
-count = 9
+count = 50
 
 [[expected_replacements]]
 placeholder = "[PERSON_2]"
 original = "Javier Ortega Ruiz"
-count = 8
+count = 40
 
 [[expected_replacements]]
 placeholder = "[ORG_1]"
 original = "Atlas Soluciones S.L."
-count = 9
+count = 40
 
 [[expected_replacements]]
 placeholder = "[PHONE_1]"
 original = "+34 612 45 78 90"
-count = 5
+count = 30
 
 [[expected_replacements]]
 placeholder = "[PHONE_2]"
 original = "+34 633 10 44 21"
-count = 5
+count = 30
 
 forbidden_literals = [
   "Laura Gómez Serrano",

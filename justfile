@@ -1,7 +1,5 @@
 set shell := ["zsh", "-cu"]
 
-default_profiles := "models/profiles.toml"
-
 default:
     @just --list
 
@@ -20,95 +18,23 @@ test-fixtures:
 fmt:
     cargo fmt
 
-run text profile='' profiles=default_profiles:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=(--profiles "{{ profiles }}")
-    if [[ -n "{{ profile }}" ]]; then
-      args+=(--profile "{{ profile }}")
-    fi
-    cargo run -- "${args[@]}" "{{ text }}"
+run text:
+    cargo run -- "{{ text }}"
 
-run-json text profile='' profiles=default_profiles:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=(--profiles "{{ profiles }}")
-    if [[ -n "{{ profile }}" ]]; then
-      args+=(--profile "{{ profile }}")
-    fi
-    cargo run -- "${args[@]}" --json "{{ text }}"
+run-json text:
+    cargo run -- --json "{{ text }}"
 
-run-tokens text profile='' profiles=default_profiles:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=(--profiles "{{ profiles }}")
-    if [[ -n "{{ profile }}" ]]; then
-      args+=(--profile "{{ profile }}")
-    fi
-    RUST_LOG=debug cargo run -- "${args[@]}" --show-tokens "{{ text }}"
+run-tokens text:
+    RUST_LOG=debug cargo run -- --show-tokens "{{ text }}"
 
-sample profile='' profiles=default_profiles:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=(--profiles "{{ profiles }}")
-    if [[ -n "{{ profile }}" ]]; then
-      args+=(--profile "{{ profile }}")
-    fi
-    cargo run -- "${args[@]}" "Contact Maria Rossi at maria.rossi@example.it or +39 347 123 4567 in Milan."
+run-stdin:
+    cargo run -- --stdin
 
-download-profile profile profiles=default_profiles:
-    #!/usr/bin/env bash
-    set -euo pipefail
+run-json-stdin:
+    cargo run -- --stdin --json
 
-    profile="{{ profile }}"
-    profiles="{{ profiles }}"
-    profiles_dir="$(cd "$(dirname "$profiles")" && pwd)"
+sample:
+    cargo run -- "Contact Maria Rossi at maria.rossi@example.it or +39 347 123 4567 in Milan."
 
-    repo="$(
-      awk -v profile="$profile" '
-        $0 ~ "^\\[profiles\\." profile "\\]$" { in_profile=1; next }
-        in_profile && /^\[profiles\./ { exit }
-        in_profile && $1 == "hf_repo" { gsub(/"/, "", $3); print $3; exit }
-      ' "$profiles"
-    )"
-
-    model_dir="$(
-      awk -v profile="$profile" '
-        $0 ~ "^\\[profiles\\." profile "\\]$" { in_profile=1; next }
-        in_profile && /^\[profiles\./ { exit }
-        in_profile && $1 == "model_dir" { gsub(/"/, "", $3); print $3; exit }
-      ' "$profiles"
-    )"
-
-    if [[ -z "$repo" || -z "$model_dir" ]]; then
-      echo "failed to resolve hf_repo/model_dir for profile '$profile' from $profiles" >&2
-      exit 1
-    fi
-
-    dest_dir="$profiles_dir/$model_dir"
-    if [[ "$model_dir" = /* ]]; then
-      dest_dir="$model_dir"
-    fi
-
-    hf download \
-      "$repo" \
-      config.json \
-      tokenizer.json \
-      onnx/model_quantized.onnx \
-      --local-dir "$dest_dir"
-
-download-default profiles=default_profiles:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    profiles="{{ profiles }}"
-    default_profile="$(
-      awk -F'"' '/^default_profile[[:space:]]*=/ { print $2; exit }' "$profiles"
-    )"
-
-    if [[ -z "$default_profile" ]]; then
-      echo "failed to resolve default_profile from $profiles" >&2
-      exit 1
-    fi
-
-    just download-profile "$default_profile" "$profiles"
+download:
+    cargo run -- download

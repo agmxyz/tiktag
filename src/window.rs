@@ -50,34 +50,53 @@ fn deduplicate(mut entities: Vec<EntitySpan>) -> Vec<EntitySpan> {
         return entities;
     }
 
-    // Sort by (label, start, longest first).
+    // Sort by label and byte offset to build overlap clusters deterministically.
     entities.sort_by(|a, b| {
         a.label
             .cmp(&b.label)
             .then(a.start.cmp(&b.start))
-            .then(b.end.cmp(&a.end))
+            .then(a.end.cmp(&b.end))
     });
 
     let mut result: Vec<EntitySpan> = Vec::new();
     let mut i = 0;
 
     while i < entities.len() {
-        // Start a new cluster with this entity (it's the longest due to sort order).
-        let winner = &entities[i];
-        let label = &winner.label;
-        let mut cluster_end = winner.end;
-        result.push(winner.clone());
-        i += 1;
+        let label = entities[i].label.clone();
+        let mut cluster_end = entities[i].end;
+        let mut cluster_last = i + 1;
 
-        // Skip any same-label entities that overlap the cluster.
-        while i < entities.len() && entities[i].label == *label && entities[i].start < cluster_end {
-            cluster_end = cluster_end.max(entities[i].end);
-            i += 1;
+        // Build one transitive overlap cluster for this label.
+        while cluster_last < entities.len()
+            && entities[cluster_last].label == label
+            && entities[cluster_last].start < cluster_end
+        {
+            cluster_end = cluster_end.max(entities[cluster_last].end);
+            cluster_last += 1;
         }
+
+        let winner = entities[i..cluster_last]
+            .iter()
+            .max_by(|a, b| {
+                let a_len = a.end.saturating_sub(a.start);
+                let b_len = b.end.saturating_sub(b.start);
+                a_len
+                    .cmp(&b_len)
+                    .then_with(|| b.start.cmp(&a.start))
+                    .then_with(|| b.end.cmp(&a.end))
+            })
+            .expect("cluster always contains at least one entity");
+        result.push(winner.clone());
+        i = cluster_last;
     }
 
     // Final sort by byte offset for stable output.
-    result.sort_by_key(|e| (e.start, e.end));
+    result.sort_by(|a, b| {
+        a.start
+            .cmp(&b.start)
+            .then(a.end.cmp(&b.end))
+            .then(a.label.cmp(&b.label))
+    });
     result
 }
 
@@ -146,6 +165,18 @@ mod tests {
 
         let result = stitch(vec![w0, w1]);
         assert_eq!(result, vec![long]);
+    }
+
+    #[test]
+    fn overlapping_same_label_keeps_longest_even_if_it_starts_later() {
+        // Regression: the previous implementation kept earliest-starting span, not longest.
+        let earlier_short = span("PER", 10, 16, "John D");
+        let later_long = span("PER", 12, 24, "hn Doe Senior");
+        let w0 = window(vec![earlier_short], 0, 50);
+        let w1 = window(vec![later_long.clone()], 0, 50);
+
+        let result = stitch(vec![w0, w1]);
+        assert_eq!(result, vec![later_long]);
     }
 
     #[test]

@@ -1,86 +1,91 @@
 # AGENTS.md
 
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a staff engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
 ## Living document policy
 
-This file is a living project memory for future sessions.
+This file is shared project memory for future sessions.
 
-Add only high-signal information:
+Keep only high-signal information:
 
-- critical design decisions and invariants
-- model-specific behavior and known quirks
+- current product contract and invariants
+- model-specific behavior that changes implementation decisions
 - proven defaults and operational shortcuts
-- recurring footguns and how to avoid them
+- recurring footguns worth preventing
 
-Keep entries concise, practical, and easy to scan.
-Remove or replace stale guidance when it is no longer true.
+Keep it short. Replace stale guidance instead of accumulating history.
 
 ## Project intent
 
-This experiment is the first iteration of a developer tool for testing PII and NER models.
+- `tiktag` is an anonymization node.
+- It receives text input and outputs anonymized text.
+- It ships a single built-in model: @models/profiles.toml.
 
-The tool exists to let developers quickly validate model behavior on real text inputs:
+## Node contract
 
-- load a model
-- run inference
-- inspect outputs and timings
-- debug obvious errors fast
-
-## Key design decisions
-
-### Product direction
-
-- Prefer pragmatic, boring solutions.
-- Prefer low cognitive load over flexible abstractions.
-- Keep the first iteration CLI-first and easy to run locally.
-- Optimize for "easy to understand in one read" instead of "future perfect architecture".
-
-### What to prioritize
-
-- Deterministic behavior and clear logs.
-- Simple defaults that work without extra config.
-- Small, incremental changes that are easy to review.
-- Fast feedback loops for developers testing models.
-
-### What to avoid (until needed)
-
-- Complex plugin systems.
-- Heavy framework layers.
-- Premature generalization for model orchestration.
-- Clever abstractions that hide control flow.
-
-### Runtime and model assumptions (v1)
-
-- Inference is ONNX-only in this iteration.
-- Models are selected by profile from `models/profiles.toml`.
-- Profile entries must include `hf_repo`, `model_dir`, `max_tokens`, `overlap_tokens`, and `decode_strategy`. All five are required at parse time — do not add serde defaults.
-- Profile-driven runs are the only supported workflow. Do not add ad hoc `--model-dir` overrides back in.
-- If tokenized input exceeds profile `max_tokens` and `overlap_tokens > 0`, the runtime uses sliding-window inference: the tokenizer's truncation+stride mechanism generates overlapping windows, each window runs through ONNX independently, and entity predictions are stitched using midpoint-based emit regions. If `overlap_tokens = 0`, the runtime fails with a clear error (windowing disabled).
-- `max_tokens` includes special tokens ([CLS]/[SEP]), so effective user-text capacity per window is `max_tokens - 2`.
-- `config.json` must have a contiguous `id2label` map (no gaps). The loader rejects sparse maps at startup.
-- The runtime contract is intentionally strict: `tokenizer.json`, `config.json`, and `onnx/model_quantized.onnx`.
-- Local model directories under `models/` are disposable developer assets and should stay ignored by git.
-- Keep the secondary profile name aligned to the source model (`xenova_ner_hrl`) to avoid alias confusion.
-- Restore local assets with `just download-default` or `just download-profile <name>`.
-- The core user workflow is: define a profile, `just download-profile <name>`, then run inference.
-- `hf` CLI is a download prerequisite only. It is not part of runtime inference.
-- Keep `just run` as the default documented path. Treat `run-json` and `run-tokens` as helper recipes for tooling and debugging.
-- Regression fixtures under `testdocs/` are profile-specific on purpose. Use profile-aligned long inputs plus expected entity coverage, not a single all-PII gold file, to evaluate windowing and decode behavior.
-- `just test-fixtures` runs ignored local regression tests that require downloaded model assets. These tests assert repeated exact entities and minimum window counts; they are not exhaustive model-quality benchmarks.
-
-### Decode strategy behavior
-
-- `generic_bio`: Standard BIO scheme. Merges consecutive tokens only when the previous is B-X and the next is I-X (same entity kind). Requires an explicit I-prefix for continuation.
-- `pii_relaxed`: Relaxed merging for the eu-pii model. Ignores BIO prefixes for continuation decisions. Allows cross-token gap merging for emails (`.@_-+`), phones (whitespace, `+-()./`), and whitespace gaps for other types. Includes a model-specific heuristic: absorbs ORGANIZATION_NAME tokens into a preceding EMAIL_ADDRESS span (the eu-pii model frequently classifies email domains as org names).
-- Some models emit bare labels (e.g. `EMAIL_ADDRESS`) without BIO prefixes. `split_label` treats these as B-tags.
-- Decode strategies are intentionally not generalizable. Each model family may have different tagging schemes, gap tolerances, and misprediction patterns. Adding a new model that doesn't fit an existing strategy requires a new `DecodeStrategy` variant and merge function in `decode.rs`. This is by design — a "general" solution would hide model-specific judgment calls.
-
-### Logging and output conventions
-
-- Use native Rust logging (`log` + `env_logger`), not ad-hoc `eprintln!` for runtime diagnostics.
-- Keep model predictions on stdout and diagnostics/timings on stderr via logger.
-- Support both human-readable output and JSON output for developer tooling.
-
-## Reviewing and writing code
-
-- Use the justfile
-- Treat this file as shared memory across sessions; update it when new relevant project knowledge is discovered.
+- Canonical input is text passed directly or through `--stdin`.
+- Prefer `--stdin` for large documents and pipeline use.
+- The CLI does not expose model selection or profile overrides.
+- Default stdout is anonymized text only.
+- `--json` is optional machine/debug output with `anonymized_text`, `replacements`, `placeholder_map`, and `stats`.
+- Diagnostics and total timing logs go to stderr through logging.
+- Placeholder assignment is stable within one document only; there is no cross-document identity.

@@ -1,17 +1,10 @@
-// Post-processing: turns raw ONNX logits into merged entity spans.
-//
-// Two decode strategies exist because different models tag differently:
-//   - generic_bio: strict BIO tagging (B-PER, I-PER). Standard NER models.
-//   - pii_relaxed: ignores BIO prefixes, merges across gaps for emails/phones.
-//     Includes model-specific heuristics for the eu-pii model.
-//
-// Adding a new model that doesn't fit either strategy? Add a new DecodeStrategy variant
-// and a corresponding merge function.
-
-use std::fmt;
+// Post-processing: turns raw ONNX logits into merged entity spans for the
+// built-in eu-pii model. The merge logic is intentionally narrow: it accepts
+// BIO-prefixed tags when present, but applies the relaxed eu-pii heuristics
+// for emails, phones, and common label noise.
 
 use ndarray::ArrayView3;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tokenizers::Encoding;
 
 /// A detected entity: label (e.g. "PER"), byte offsets into the original text, and the text itself.
@@ -21,29 +14,6 @@ pub struct EntitySpan {
     pub start: usize,
     pub end: usize,
     pub text: String,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum DecodeStrategy {
-    GenericBio,
-    PiiRelaxed,
-}
-
-impl Default for DecodeStrategy {
-    fn default() -> Self {
-        Self::GenericBio
-    }
-}
-
-impl fmt::Display for DecodeStrategy {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = match self {
-            Self::GenericBio => "generic_bio",
-            Self::PiiRelaxed => "pii_relaxed",
-        };
-        f.write_str(value)
-    }
 }
 
 /// Pick the highest-scoring label for each token position. Returns label indices.
@@ -77,7 +47,6 @@ pub fn decode_entities(
     encoding: &Encoding,
     predictions: &[usize],
     labels: &[String],
-    strategy: DecodeStrategy,
 ) -> Vec<EntitySpan> {
     let special_mask = encoding.get_special_tokens_mask();
     let offsets = encoding.get_offsets();
@@ -119,7 +88,7 @@ pub fn decode_entities(
             .and_then(|entity| {
                 let gap_start = entity.end.min(start);
                 let gap = text.get(gap_start..start).unwrap_or("");
-                merged_label(strategy, entity.label.as_str(), kind, prefix, gap)
+                merged_label(entity.label.as_str(), kind, prefix, gap)
             })
             .map(str::to_owned);
 
@@ -167,42 +136,17 @@ fn flush_entity(current: &mut Option<EntitySpan>, entities: &mut Vec<EntitySpan>
 
 /// Decide if the next token should merge into the current entity span.
 /// Returns Some(label) if yes, None if the token starts a new span.
-fn merged_label<'a>(
-    strategy: DecodeStrategy,
-    current: &'a str,
-    next: &'a str,
-    prefix: &str,
-    gap: &str,
-) -> Option<&'a str> {
-    match strategy {
-        DecodeStrategy::GenericBio => merged_label_generic(current, next, prefix, gap),
-        DecodeStrategy::PiiRelaxed => merged_label_pii_relaxed(current, next, gap),
-    }
-}
-
-/// GenericBio: only merge if previous is B-X, next is I-X (same kind), with whitespace gap.
-fn merged_label_generic<'a>(
-    current: &'a str,
-    next: &'a str,
-    prefix: &str,
-    gap: &str,
-) -> Option<&'a str> {
-    if current == next && prefix == "I" && is_generic_gap(gap) {
-        return Some(current);
-    }
-    None
-}
-
-/// PiiRelaxed: ignores BIO prefix, merges same-kind tokens across type-specific gaps
-/// (e.g. emails allow `.@_-+`, phones allow `+-()./` and whitespace).
-fn merged_label_pii_relaxed<'a>(current: &'a str, next: &'a str, gap: &str) -> Option<&'a str> {
+fn merged_label<'a>(current: &'a str, next: &'a str, prefix: &str, gap: &str) -> Option<&'a str> {
     if current == next {
         let can_merge = match current {
             "EMAIL_ADDRESS" => gap.is_empty() || gap.chars().all(|ch| "._-+@".contains(ch)),
             "PHONE_NUMBER" => gap
                 .chars()
                 .all(|ch| ch.is_whitespace() || "+-()./".contains(ch)),
-            _ => is_generic_gap(gap),
+            // The eu-pii model sometimes emits repeated B-tags across subword fragments
+            // inside one lexical token (for example "M" + "ARIO"). Keep those together
+            // when there is no byte gap; otherwise require a normal I-tag continuation.
+            _ => gap.is_empty() || (prefix == "I" && is_generic_gap(gap)),
         };
 
         if can_merge {
@@ -228,7 +172,7 @@ fn is_generic_gap(gap: &str) -> bool {
 mod tests {
     use tokenizers::Encoding;
 
-    use super::{DecodeStrategy, EntitySpan, decode_entities};
+    use super::{EntitySpan, decode_entities};
 
     fn test_encoding(tokens: &[&str], offsets: &[(usize, usize)]) -> Encoding {
         test_encoding_with_mask(tokens, offsets, &vec![0; tokens.len()])
@@ -263,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn merges_generic_bio_spans() {
+    fn merges_bio_prefixed_spans() {
         let text = "John Doe";
         let encoding = test_encoding(&["John", "Doe"], &[(0, 4), (5, 8)]);
         let predictions = vec![1, 2];
@@ -272,15 +216,24 @@ mod tests {
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
-        let entities = decode_entities(
-            text,
-            &encoding,
-            &predictions,
-            &labels,
-            DecodeStrategy::GenericBio,
-        );
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
 
         assert_eq!(entities, vec![span("PER", 0, 8, "John Doe")]);
+    }
+
+    #[test]
+    fn merges_zero_gap_same_label_fragments_even_with_b_prefix() {
+        let text = "MARIO";
+        let encoding = test_encoding(&["M", "ARIO"], &[(0, 1), (1, 5)]);
+        let predictions = vec![1, 1];
+        let labels = vec!["O", "B-PERSON_NAME"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
+
+        assert_eq!(entities, vec![span("PERSON_NAME", 0, 5, "MARIO")]);
     }
 
     #[test]
@@ -293,13 +246,7 @@ mod tests {
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
-        let entities = decode_entities(
-            text,
-            &encoding,
-            &predictions,
-            &labels,
-            DecodeStrategy::PiiRelaxed,
-        );
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
 
         assert_eq!(
             entities,
@@ -320,13 +267,7 @@ mod tests {
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
-        let entities = decode_entities(
-            text,
-            &encoding,
-            &predictions,
-            &labels,
-            DecodeStrategy::PiiRelaxed,
-        );
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
 
         assert_eq!(
             entities,
@@ -344,13 +285,7 @@ mod tests {
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
-        let entities = decode_entities(
-            text,
-            &encoding,
-            &predictions,
-            &labels,
-            DecodeStrategy::GenericBio,
-        );
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
 
         assert_eq!(
             entities,
@@ -373,13 +308,7 @@ mod tests {
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
-        let entities = decode_entities(
-            text,
-            &encoding,
-            &predictions,
-            &labels,
-            DecodeStrategy::GenericBio,
-        );
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
 
         assert_eq!(entities, vec![span("PER", 0, 4, "John")]);
     }
@@ -396,13 +325,7 @@ mod tests {
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
-        let entities = decode_entities(
-            text,
-            &encoding,
-            &predictions,
-            &labels,
-            DecodeStrategy::PiiRelaxed,
-        );
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
 
         assert_eq!(
             entities,

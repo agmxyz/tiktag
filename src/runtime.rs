@@ -1,35 +1,33 @@
 // ONNX model loading and inference. This is the core runtime:
 //   1. Validate the model bundle (tokenizer.json, config.json, onnx/model_quantized.onnx)
 //   2. Load tokenizer, labels from config.json id2label, and ONNX session
-//   3. Tokenize input text, run the ONNX graph, decode entity spans from logits
-// All timings are collected into a BTreeMap for structured output.
+//   3. Validate the model/config contract for token-classification logits
+//   4. Tokenize input text, run the ONNX graph, decode entity spans from logits
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Instant;
 
 use anyhow::{Context, anyhow, bail};
 use log::{debug, info};
 use ndarray::{Array2, Ix3};
 use ort::session::{Session, builder::GraphOptimizationLevel};
-use ort::value::TensorRef;
+use ort::value::{Outlet, TensorRef};
+use serde::Serialize;
 use serde_json::Value;
 use tokenizers::Tokenizer;
 use tokenizers::utils::truncation::{TruncationDirection, TruncationParams, TruncationStrategy};
 
-use crate::decode::{DecodeStrategy, EntitySpan, argmax_label_indices, decode_entities};
+use crate::decode::{EntitySpan, argmax_label_indices, decode_entities};
+use crate::model_bundle::validate_model_bundle;
 use crate::profiles::ResolvedProfile;
 use crate::window::WindowEntities;
-
-/// Every model bundle must have these three files present.
-const REQUIRED_MODEL_FILES: &[&str] =
-    &["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
 
 #[derive(Debug)]
 pub struct LoadResult {
     pub runtime: ModelRuntime,
-    pub timings_ms: BTreeMap<String, f64>,
+    pub timings: LoadTimings,
 }
 
 #[derive(Debug)]
@@ -37,7 +35,23 @@ pub struct InferenceResult {
     pub entities: Vec<EntitySpan>,
     pub sequence_len: usize,
     pub window_count: usize,
-    pub timings_ms: BTreeMap<String, f64>,
+    pub timings: InferenceTimings,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LoadTimings {
+    pub total_ms: f64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct InferenceTimings {
+    pub total_ms: f64,
+}
+
+#[derive(Debug)]
+struct WindowedInferenceResult {
+    entities: Vec<EntitySpan>,
+    window_count: usize,
 }
 
 /// Holds everything needed to run inference: the tokenizer, label map, ONNX session,
@@ -50,14 +64,13 @@ pub struct ModelRuntime {
     profile_name: String,
     max_tokens: usize,
     overlap_tokens: usize,
-    decode_strategy: DecodeStrategy,
+    logits_output_name: String,
     /// BERT-family models need token_type_ids; DistilBERT doesn't. Detected at load time.
     has_token_type_ids: bool,
 }
 
 impl ModelRuntime {
     pub fn load(profile: &ResolvedProfile) -> anyhow::Result<LoadResult> {
-        let mut timings_ms = BTreeMap::new();
         let total_start = Instant::now();
 
         validate_model_bundle(&profile.model_dir)?;
@@ -72,7 +85,6 @@ impl ModelRuntime {
             profile.model_dir.display()
         );
 
-        let tokenizer_start = Instant::now();
         let mut tokenizer = Tokenizer::from_file(&tokenizer_path).map_err(|err| {
             anyhow!(
                 "failed to load tokenizer at {}: {err}",
@@ -87,17 +99,11 @@ impl ModelRuntime {
                 tokenizer_path.display()
             )
         })?;
-        record_timing(&mut timings_ms, "load.tokenizer", tokenizer_start);
 
-        let labels_start = Instant::now();
         let labels = load_labels(&config_path)?;
-        record_timing(&mut timings_ms, "load.labels", labels_start);
 
-        let ort_init_start = Instant::now();
         ort::init().commit();
-        record_timing(&mut timings_ms, "load.ort_init", ort_init_start);
 
-        let session_start = Instant::now();
         let session = Session::builder()
             .map_err(ort_error)?
             .with_optimization_level(GraphOptimizationLevel::Level3)
@@ -105,7 +111,9 @@ impl ModelRuntime {
             .commit_from_file(model_path)
             .map_err(ort_error)
             .context("failed to create ONNX Runtime session")?;
-        record_timing(&mut timings_ms, "load.session", session_start);
+
+        let logits_output_name =
+            validate_logits_output_metadata(&profile.name, &labels, session.outputs())?;
 
         // Some ONNX exports (e.g. BERT-family) require a token_type_ids input; others
         // (e.g. DistilBERT) don't. Probe the session graph to decide at load time.
@@ -114,7 +122,7 @@ impl ModelRuntime {
             .iter()
             .any(|input| input.name() == "token_type_ids");
 
-        record_timing(&mut timings_ms, "load.total", total_start);
+        let total_ms = finish_timing("load.total", total_start);
 
         Ok(LoadResult {
             runtime: Self {
@@ -124,20 +132,18 @@ impl ModelRuntime {
                 profile_name: profile.name.clone(),
                 max_tokens: profile.max_tokens,
                 overlap_tokens: profile.overlap_tokens,
-                decode_strategy: profile.decode_strategy,
+                logits_output_name,
                 has_token_type_ids,
             },
-            timings_ms,
+            timings: LoadTimings { total_ms },
         })
     }
 
     pub fn infer(&mut self, text: &str, show_tokens: bool) -> anyhow::Result<InferenceResult> {
-        let mut timings_ms = BTreeMap::new();
         let total_start = Instant::now();
         info!("running inference on {} input bytes", text.len());
 
         // Tokenize without truncation to measure true sequence length.
-        let tokenize_start = Instant::now();
         let encoding = self
             .tokenizer
             .encode(text, true)
@@ -146,38 +152,34 @@ impl ModelRuntime {
         if seq_len == 0 {
             bail!("tokenizer returned an empty encoding");
         }
-        record_timing(&mut timings_ms, "infer.tokenize", tokenize_start);
         info!("encoded sequence length: {seq_len}");
 
         if seq_len <= self.max_tokens {
-            // Fast path: single window, identical to pre-windowing behavior.
-            let entities =
-                self.infer_single_encoding(text, &encoding, show_tokens, &mut timings_ms)?;
-            record_timing(&mut timings_ms, "infer.total", total_start);
+            let entities = self.infer_single_encoding(text, &encoding, show_tokens)?;
+            let total_ms = finish_timing("infer.total", total_start);
+            let timings = InferenceTimings { total_ms };
             Ok(InferenceResult {
                 entities,
                 sequence_len: seq_len,
                 window_count: 1,
-                timings_ms,
+                timings,
             })
         } else if self.overlap_tokens == 0 {
-            // Windowing disabled — preserve fail-fast behavior.
             ensure_sequence_within_limit(&self.profile_name, seq_len, self.max_tokens)?;
             unreachable!()
         } else {
-            // Sliding-window inference.
             info!(
                 "input exceeds max_tokens={}, using sliding window (overlap_tokens={})",
                 self.max_tokens, self.overlap_tokens
             );
-            let (entities, window_count) =
-                self.infer_windowed(text, show_tokens, &mut timings_ms)?;
-            record_timing(&mut timings_ms, "infer.total", total_start);
+            let result = self.infer_windowed(text, show_tokens)?;
+            let total_ms = finish_timing("infer.total", total_start);
+            let timings = InferenceTimings { total_ms };
             Ok(InferenceResult {
-                entities,
+                entities: result.entities,
                 sequence_len: seq_len,
-                window_count,
-                timings_ms,
+                window_count: result.window_count,
+                timings,
             })
         }
     }
@@ -189,11 +191,9 @@ impl ModelRuntime {
         text: &str,
         encoding: &tokenizers::Encoding,
         show_tokens: bool,
-        timings_ms: &mut BTreeMap<String, f64>,
     ) -> anyhow::Result<Vec<EntitySpan>> {
         let seq_len = encoding.len();
 
-        let prepare_start = Instant::now();
         let input_ids = Array2::from_shape_vec(
             (1, seq_len),
             encoding.get_ids().iter().map(|&id| i64::from(id)).collect(),
@@ -206,9 +206,7 @@ impl ModelRuntime {
                 .map(|&mask| i64::from(mask))
                 .collect(),
         )?;
-        record_timing(timings_ms, "infer.prepare", prepare_start);
 
-        let run_start = Instant::now();
         let outputs = if self.has_token_type_ids {
             let token_type_ids = Array2::<i64>::zeros((1, seq_len));
             self.session.run(ort::inputs! {
@@ -222,7 +220,6 @@ impl ModelRuntime {
                 "attention_mask" => TensorRef::from_array_view(attention_mask.view())?,
             })?
         };
-        record_timing(timings_ms, "infer.onnx", run_start);
 
         let logits = outputs[0]
             .try_extract_array::<f32>()
@@ -230,6 +227,13 @@ impl ModelRuntime {
         let logits = logits
             .into_dimensionality::<Ix3>()
             .context("expected logits with shape [batch, seq, labels]")?;
+        validate_runtime_logits_shape(
+            &self.profile_name,
+            &self.logits_output_name,
+            &self.labels,
+            logits.shape(),
+        )?;
+
         let predictions = argmax_label_indices(logits);
 
         if show_tokens {
@@ -240,20 +244,11 @@ impl ModelRuntime {
                     .map(String::as_str)
                     .unwrap_or("<unknown>");
                 let (start, end) = encoding.get_offsets().get(index).copied().unwrap_or((0, 0));
-                debug!("{index:>3}: {token:<20} {label:<32} [{start}..{end}]");
+                debug!(target: "tokens", "{index:>3}: {token:<20} {label:<32} [{start}..{end}]");
             }
         }
 
-        let decode_start = Instant::now();
-        let entities = decode_entities(
-            text,
-            encoding,
-            &predictions,
-            &self.labels,
-            self.decode_strategy,
-        );
-        record_timing(timings_ms, "infer.decode", decode_start);
-
+        let entities = decode_entities(text, encoding, &predictions, &self.labels);
         Ok(entities)
     }
 
@@ -263,10 +258,7 @@ impl ModelRuntime {
         &mut self,
         text: &str,
         show_tokens: bool,
-        timings_ms: &mut BTreeMap<String, f64>,
-    ) -> anyhow::Result<(Vec<EntitySpan>, usize)> {
-        // Clone tokenizer and enable truncation with stride for overflow windows.
-        let retokenize_start = Instant::now();
+    ) -> anyhow::Result<WindowedInferenceResult> {
         let mut windowed_tokenizer = self.tokenizer.clone();
         windowed_tokenizer
             .with_truncation(Some(TruncationParams {
@@ -285,23 +277,17 @@ impl ModelRuntime {
         let mut encodings = Vec::with_capacity(1 + overflow.len());
         encodings.push(primary);
         encodings.extend(overflow);
-        let window_count = encodings.len();
-        record_timing(timings_ms, "infer.windowed_tokenize", retokenize_start);
-        info!("sliding window: {window_count} windows");
+        info!("sliding window: {} windows", encodings.len());
 
-        // Run each window through ONNX and collect entities with emit regions.
-        let mut window_results = Vec::with_capacity(window_count);
+        let mut window_results = Vec::with_capacity(encodings.len());
         for (i, encoding) in encodings.iter().enumerate() {
             if show_tokens {
-                debug!("--- window {i} ---");
+                debug!(target: "tokens", "--- window {i} ---");
             }
 
-            let window_start = Instant::now();
-            let entities = self.infer_single_encoding(text, encoding, show_tokens, timings_ms)?;
-            record_timing(timings_ms, &format!("infer.window_{i}"), window_start);
-
+            let entities = self.infer_single_encoding(text, encoding, show_tokens)?;
             let (emit_start, emit_end) =
-                compute_emit_region(text, encoding, i, window_count, self.overlap_tokens);
+                compute_emit_region(text, encoding, i, encodings.len(), self.overlap_tokens);
             info!(
                 "window {i}: {} entities, emit region [{emit_start}..{emit_end})",
                 entities.len()
@@ -314,13 +300,13 @@ impl ModelRuntime {
             });
         }
 
-        // Stitch entities across windows.
-        let stitch_start = Instant::now();
         let entities = crate::window::stitch(window_results);
-        record_timing(timings_ms, "infer.stitch", stitch_start);
         info!("stitched to {} entities", entities.len());
 
-        Ok((entities, window_count))
+        Ok(WindowedInferenceResult {
+            entities,
+            window_count: encodings.len(),
+        })
     }
 }
 
@@ -359,9 +345,7 @@ fn load_labels(config_path: &Path) -> anyhow::Result<Vec<String>> {
         ordered[index] = label;
     }
 
-    // Guard against sparse id2label maps: a gap would produce an empty-string label
-    // that silently passes "O" checks in decode and creates garbage entities.
-    if let Some(gap) = ordered.iter().position(|l| l.is_empty()) {
+    if let Some(gap) = ordered.iter().position(|label| label.is_empty()) {
         bail!(
             "id2label has a gap at index {gap} — all indices from 0 to {max_index} must be present"
         );
@@ -370,28 +354,66 @@ fn load_labels(config_path: &Path) -> anyhow::Result<Vec<String>> {
     Ok(ordered)
 }
 
-fn validate_model_bundle(model_dir: &Path) -> anyhow::Result<()> {
-    let missing = REQUIRED_MODEL_FILES
-        .iter()
-        .map(|relative_path| model_dir.join(relative_path))
-        .filter(|path| !path.is_file())
-        .collect::<Vec<PathBuf>>();
+fn validate_logits_output_metadata(
+    profile_name: &str,
+    labels: &[String],
+    outputs: &[Outlet],
+) -> anyhow::Result<String> {
+    let output = outputs.first().ok_or_else(|| {
+        anyhow!(
+            "profile '{profile_name}' ONNX model has no outputs; expected token-classification logits output"
+        )
+    })?;
+    let output_name = output.name().to_owned();
+    let shape = output.dtype().tensor_shape().ok_or_else(|| {
+        anyhow!(
+            "profile '{profile_name}' output '{output_name}' is not a tensor; expected token-classification logits [batch, seq, labels]"
+        )
+    })?;
+    let shape = &shape[..];
 
-    if missing.is_empty() {
-        return Ok(());
+    if shape.len() != 3 {
+        bail!(
+            "profile '{profile_name}' output '{output_name}' has shape {shape:?}; expected rank-3 logits [batch, seq, labels]"
+        );
     }
 
-    let missing_list = missing
-        .iter()
-        .map(|path| path.display().to_string())
-        .collect::<Vec<_>>()
-        .join(", ");
+    let onnx_label_count = shape[2];
+    if onnx_label_count >= 0 && onnx_label_count as usize != labels.len() {
+        bail!(
+            "profile '{profile_name}' label schema mismatch: config.json id2label has {} labels, but ONNX output '{output_name}' declares {} labels in shape {:?}. Ensure config.json and onnx/model_quantized.onnx come from the same model export.",
+            labels.len(),
+            onnx_label_count,
+            shape
+        );
+    }
 
-    bail!(
-        "model dir '{}' is missing required files: {}",
-        model_dir.display(),
-        missing_list
-    );
+    Ok(output_name)
+}
+
+fn validate_runtime_logits_shape(
+    profile_name: &str,
+    output_name: &str,
+    labels: &[String],
+    shape: &[usize],
+) -> anyhow::Result<()> {
+    if shape.len() != 3 {
+        bail!(
+            "profile '{profile_name}' output '{output_name}' has shape {shape:?}; expected rank-3 logits [batch, seq, labels]"
+        );
+    }
+
+    let actual_count = shape[2];
+    if actual_count != labels.len() {
+        bail!(
+            "profile '{profile_name}' label schema mismatch: config.json id2label has {} labels, but ONNX output '{output_name}' produced logits with {} labels (shape {:?}). Ensure config.json and onnx/model_quantized.onnx come from the same model export.",
+            labels.len(),
+            actual_count,
+            shape
+        );
+    }
+
+    Ok(())
 }
 
 /// Compute the byte range where a window's predictions are authoritative.
@@ -409,7 +431,6 @@ fn compute_emit_region(
     let offsets = encoding.get_offsets();
     let special_mask = encoding.get_special_tokens_mask();
 
-    // Usable tokens: non-special, non-zero-length.
     let usable: Vec<(usize, usize)> = offsets
         .iter()
         .zip(special_mask.iter())
@@ -473,10 +494,10 @@ fn ensure_sequence_within_limit(
     Ok(())
 }
 
-fn record_timing(timings_ms: &mut BTreeMap<String, f64>, stage: &str, started_at: Instant) {
+fn finish_timing(stage: &str, started_at: Instant) -> f64 {
     let elapsed_ms = started_at.elapsed().as_secs_f64() * 1_000.0;
-    timings_ms.insert(stage.to_owned(), elapsed_ms);
     info!(target: "timing", "{stage}: {elapsed_ms:.2} ms");
+    elapsed_ms
 }
 
 fn ort_error<E>(err: ort::Error<E>) -> anyhow::Error {
@@ -485,32 +506,106 @@ fn ort_error<E>(err: ort::Error<E>) -> anyhow::Error {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use ort::value::{Outlet, Shape, SymbolicDimensions, TensorElementType, ValueType};
 
-    use tempfile::tempdir;
+    use super::{
+        InferenceTimings, LoadTimings, ensure_sequence_within_limit,
+        validate_logits_output_metadata, validate_runtime_logits_shape,
+    };
 
-    use super::{ensure_sequence_within_limit, validate_model_bundle};
+    fn labels(count: usize) -> Vec<String> {
+        (0..count).map(|index| format!("LABEL_{index}")).collect()
+    }
 
-    #[test]
-    fn rejects_missing_required_model_files() {
-        let temp_dir = tempdir().expect("temp dir");
-        let err = validate_model_bundle(temp_dir.path()).expect_err("missing files should fail");
-        let message = err.to_string();
-
-        assert!(message.contains("tokenizer.json"));
-        assert!(message.contains("config.json"));
-        assert!(message.contains("onnx/model_quantized.onnx"));
+    fn tensor_output(name: &str, shape: Vec<i64>) -> Outlet {
+        Outlet::new(
+            name,
+            ValueType::Tensor {
+                ty: TensorElementType::Float32,
+                shape: Shape::new(shape.iter().copied()),
+                dimension_symbols: SymbolicDimensions::empty(shape.len()),
+            },
+        )
     }
 
     #[test]
-    fn accepts_valid_model_bundle_shape() {
-        let temp_dir = tempdir().expect("temp dir");
-        fs::write(temp_dir.path().join("tokenizer.json"), "{}").expect("tokenizer");
-        fs::write(temp_dir.path().join("config.json"), "{}").expect("config");
-        fs::create_dir_all(temp_dir.path().join("onnx")).expect("onnx dir");
-        fs::write(temp_dir.path().join("onnx/model_quantized.onnx"), "").expect("onnx model");
+    fn validates_matching_declared_label_count() {
+        let outputs = vec![tensor_output("logits", vec![1, -1, 9])];
 
-        validate_model_bundle(temp_dir.path()).expect("bundle should validate");
+        let output_name = validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+            .expect("matching schema should validate");
+
+        assert_eq!(output_name, "logits");
+    }
+
+    #[test]
+    fn rejects_declared_label_count_mismatch() {
+        let outputs = vec![tensor_output("logits", vec![1, -1, 8])];
+
+        let err = validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+            .expect_err("mismatch should fail");
+
+        assert!(err.to_string().contains("label schema mismatch"));
+    }
+
+    #[test]
+    fn skips_declared_count_check_for_dynamic_label_dimension() {
+        let outputs = vec![tensor_output("logits", vec![1, -1, -1])];
+
+        validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+            .expect("dynamic label dimension should be allowed");
+    }
+
+    #[test]
+    fn rejects_missing_outputs() {
+        let err = validate_logits_output_metadata("eu_pii", &labels(9), &[])
+            .expect_err("missing outputs should fail");
+
+        assert!(err.to_string().contains("has no outputs"));
+    }
+
+    #[test]
+    fn rejects_non_tensor_outputs() {
+        let outputs = vec![Outlet::new(
+            "logits",
+            ValueType::Sequence(Box::new(ValueType::Tensor {
+                ty: TensorElementType::Float32,
+                shape: Shape::new([1]),
+                dimension_symbols: SymbolicDimensions::empty(1),
+            })),
+        )];
+
+        let err = validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+            .expect_err("non-tensor outputs should fail");
+
+        assert!(err.to_string().contains("is not a tensor"));
+    }
+
+    #[test]
+    fn rejects_wrong_rank_outputs() {
+        let outputs = vec![tensor_output("logits", vec![1, 9])];
+
+        let err = validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+            .expect_err("wrong rank should fail");
+
+        assert!(err.to_string().contains("expected rank-3 logits"));
+    }
+
+    #[test]
+    fn rejects_runtime_logits_shape_mismatch() {
+        let err = validate_runtime_logits_shape("eu_pii", "logits", &labels(9), &[1, 32, 8])
+            .expect_err("runtime mismatch should fail");
+
+        assert!(err.to_string().contains("produced logits with 8 labels"));
+    }
+
+    #[test]
+    fn timing_structs_only_expose_totals() {
+        let load = LoadTimings { total_ms: 10.0 };
+        let infer = InferenceTimings { total_ms: 16.5 };
+
+        assert_eq!(load.total_ms, 10.0);
+        assert_eq!(infer.total_ms, 16.5);
     }
 
     #[test]

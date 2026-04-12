@@ -1,18 +1,22 @@
 # Test Fixtures
 
-These fixtures are profile-aligned regression inputs for local model testing.
+`testdocs/` now has two kinds of realistic synthetic inputs for `eu_pii`.
 
-- `eu_pii_windowed_*`: long synthetic text centered on `eu_pii` entity types, with the manifest asserting only the stable subset we want to regress.
-- `xenova_ner_windowed_*`: long synthetic text that stays within the narrower `PER` / `ORG` / `LOC` coverage of `xenova_ner_hrl`.
+Automated regression fixtures:
 
-The expected manifests are intentionally partial:
+- `eu_pii_windowed_*`: medium-size privacy incident dossier that should force multi-window inference and verify stable placeholder reuse.
+- `eu_pii_stress_windowed_*`: larger incident bundle that pushes the same repeated values across deep sliding-window inference.
 
-- they check repeated exact entities we expect the model to find
-- they assert the long input actually uses multiple windows
-- they do not try to assert full extraction exhaustiveness or anonymized-text output
+These expected manifests focus on anonymization behavior:
 
-Run them with:
+- anonymized text contains expected placeholders
+- repeated exact values reuse the same placeholder
+- source literals used in the stable fixture set do not remain in anonymized output
+- long inputs still produce multiple windows and stable total timing metadata
 
-```bash
-just test-fixtures
-```
+Exploratory manual probes:
+
+- `eu_pii_hard_probe_input.md`
+- `eu_pii_hard_stress_input.md`
+
+The hard probes intentionally include harder families such as emails, URLs, IPs, IDs, addresses, and bank data. They are useful for characterizing current model behavior, but they are not treated as stable pass/fail regression fixtures yet.

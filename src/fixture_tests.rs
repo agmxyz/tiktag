@@ -5,21 +5,35 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, bail};
 use serde::Deserialize;
 
+use crate::anonymize;
 use crate::decode::EntitySpan;
-use crate::profiles::Profiles;
+use crate::model_bundle::missing_model_files;
+use crate::profiles::{BUILTIN_PROFILE_NAME, Profiles};
 use crate::runtime::{LoadResult, ModelRuntime};
 
 #[derive(Debug, Deserialize)]
 struct FixtureManifest {
     profile: String,
     min_window_count: usize,
+    #[serde(default)]
     expected: Vec<ExpectedEntity>,
+    #[serde(default)]
+    expected_replacements: Vec<ExpectedReplacement>,
+    #[serde(default)]
+    forbidden_literals: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct ExpectedEntity {
     label: String,
     text: String,
+    count: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct ExpectedReplacement {
+    placeholder: String,
+    original: String,
     count: usize,
 }
 
@@ -42,12 +56,7 @@ fn load_input(base_name: &str) -> anyhow::Result<String> {
 }
 
 fn require_local_model_assets(model_dir: &Path, profile_name: &str) -> anyhow::Result<()> {
-    let required = ["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
-    let missing = required
-        .iter()
-        .map(|path| model_dir.join(path))
-        .filter(|path| !path.is_file())
-        .collect::<Vec<_>>();
+    let missing = missing_model_files(model_dir);
 
     if missing.is_empty() {
         return Ok(());
@@ -60,10 +69,7 @@ fn require_local_model_assets(model_dir: &Path, profile_name: &str) -> anyhow::R
         .join(", ");
 
     bail!(
-        "fixture tests for profile '{}' require local model assets; missing: {}. Run `just download-profile {}` first.",
-        profile_name,
-        missing_list,
-        profile_name
+        "fixture tests for profile '{profile_name}' require local model assets; missing: {missing_list}. Run `just download` first."
     );
 }
 
@@ -89,9 +95,7 @@ fn assert_no_exact_duplicate_spans(base_name: &str, entities: &[EntitySpan]) {
         );
         assert!(
             seen.insert(key),
-            "fixture '{}' produced an exact duplicate span: {:?}",
-            base_name,
-            entity
+            "fixture '{base_name}' produced an exact duplicate span: {entity:?}"
         );
     }
 }
@@ -100,8 +104,13 @@ fn run_fixture(base_name: &str) -> anyhow::Result<()> {
     let manifest = load_manifest(base_name)?;
     let input = load_input(base_name)?;
 
+    assert_eq!(
+        manifest.profile, BUILTIN_PROFILE_NAME,
+        "fixture '{base_name}' must target the built-in eu_pii profile"
+    );
+
     let profiles = Profiles::load(&project_path("models/profiles.toml"))?;
-    let resolved = profiles.resolve(Some(&manifest.profile))?;
+    let resolved = profiles.resolve_default();
     require_local_model_assets(&resolved.model_dir, &manifest.profile)?;
 
     let LoadResult { mut runtime, .. } = ModelRuntime::load(&resolved)?;
@@ -116,6 +125,10 @@ fn run_fixture(base_name: &str) -> anyhow::Result<()> {
     );
 
     assert_no_exact_duplicate_spans(base_name, &result.entities);
+    assert!(
+        result.timings.total_ms > 0.0,
+        "fixture '{base_name}' expected infer.total_ms to be positive"
+    );
 
     let actual_counts = exact_entity_counts(&result.entities);
     for expected in manifest.expected {
@@ -126,6 +139,54 @@ fn run_fixture(base_name: &str) -> anyhow::Result<()> {
             "fixture '{}' expected {} occurrence(s) of [{}] {}, got {}",
             base_name, expected.count, expected.label, expected.text, actual
         );
+    }
+
+    if !manifest.expected_replacements.is_empty() || !manifest.forbidden_literals.is_empty() {
+        let anonymized = anonymize::anonymize(&input, &result.entities)?;
+        for expected in manifest.expected_replacements {
+            let replacement_count = anonymized
+                .replacements
+                .iter()
+                .filter(|replacement| replacement.placeholder == expected.placeholder)
+                .count();
+            assert_eq!(
+                replacement_count, expected.count,
+                "fixture '{}' expected {} replacement(s) for placeholder {}, got {}",
+                base_name, expected.count, expected.placeholder, replacement_count
+            );
+            assert_eq!(
+                anonymized
+                    .placeholder_map
+                    .get(&expected.placeholder)
+                    .map(String::as_str),
+                Some(expected.original.as_str()),
+                "fixture '{}' expected placeholder {} to map to {}",
+                base_name,
+                expected.placeholder,
+                expected.original
+            );
+            assert!(
+                anonymized.anonymized_text.contains(&expected.placeholder),
+                "fixture '{}' expected anonymized text to contain {}",
+                base_name,
+                expected.placeholder
+            );
+            assert!(
+                !anonymized.anonymized_text.contains(&expected.original),
+                "fixture '{}' expected anonymized text to remove {}",
+                base_name,
+                expected.original
+            );
+        }
+
+        for forbidden_literal in manifest.forbidden_literals {
+            assert!(
+                !anonymized.anonymized_text.contains(&forbidden_literal),
+                "fixture '{}' expected anonymized text to remove forbidden literal {}",
+                base_name,
+                forbidden_literal
+            );
+        }
     }
 
     Ok(())
@@ -139,6 +200,6 @@ fn fixture_regression_eu_pii_windowed() -> anyhow::Result<()> {
 
 #[test]
 #[ignore = "requires local downloaded model assets; run `just test-fixtures`"]
-fn fixture_regression_xenova_ner_windowed() -> anyhow::Result<()> {
-    run_fixture("xenova_ner_windowed")
+fn fixture_regression_eu_pii_stress_windowed() -> anyhow::Result<()> {
+    run_fixture("eu_pii_stress_windowed")
 }
