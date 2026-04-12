@@ -182,9 +182,7 @@ fn run_fixture(base_name: &str) -> anyhow::Result<()> {
         for forbidden_literal in manifest.forbidden_literals {
             assert!(
                 !anonymized.anonymized_text.contains(&forbidden_literal),
-                "fixture '{}' expected anonymized text to remove forbidden literal {}",
-                base_name,
-                forbidden_literal
+                "fixture '{base_name}' expected anonymized text to remove forbidden literal {forbidden_literal}"
             );
         }
     }

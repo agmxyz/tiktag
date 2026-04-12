@@ -259,8 +259,14 @@ mod tests {
         );
         assert_eq!(json["stats"]["accepted_replacement_count"], Value::from(2));
         assert_eq!(json["placeholder_map"]["[PERSON_1]"], Value::from("Maria"));
-        assert_eq!(json["stats"]["timings"]["load"]["total_ms"], Value::from(46.0));
-        assert_eq!(json["stats"]["timings"]["infer"]["total_ms"], Value::from(11.5));
+        assert_eq!(
+            json["stats"]["timings"]["load"]["total_ms"],
+            Value::from(46.0)
+        );
+        assert_eq!(
+            json["stats"]["timings"]["infer"]["total_ms"],
+            Value::from(11.5)
+        );
     }
 
     #[test]
@@ -277,8 +283,14 @@ mod tests {
         let json = serde_json::to_value(payload).expect("json");
         assert_eq!(json["stats"]["window_count"], Value::from(3));
         assert_eq!(json["stats"]["counts_by_family"]["PERSON"], Value::from(1));
-        assert_eq!(json["stats"]["timings"]["load"]["total_ms"], Value::from(46.0));
-        assert_eq!(json["stats"]["timings"]["infer"]["total_ms"], Value::from(16.5));
+        assert_eq!(
+            json["stats"]["timings"]["load"]["total_ms"],
+            Value::from(46.0)
+        );
+        assert_eq!(
+            json["stats"]["timings"]["infer"]["total_ms"],
+            Value::from(16.5)
+        );
         assert!(json["stats"].get("timings_ms").is_none());
     }
 }

@@ -345,11 +345,10 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
             letter_count >= 2 && first_alpha_is_uppercase(text) && !is_common_junk_token(&lower)
         }
         PlaceholderFamily::Org => {
-            letter_count >= 2
-                && !text.contains('@')
+            (has_whitespace || (has_uppercase && !text.contains('.')))
                 && !text.contains('/')
-                && !(text.contains('.') && !has_whitespace)
-                && (has_uppercase || has_whitespace)
+                && !text.contains('@')
+                && letter_count >= 2
                 && !is_common_junk_token(&lower)
         }
         PlaceholderFamily::Dob => alnum_count >= 4 && digit_count >= 1,

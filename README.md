@@ -6,17 +6,25 @@ CLI for anonymizing text with `bardsai/eu-pii-anonimization-multilang`.
 
 ## Workflow
 
-1. Download the built-in model with `just download` or `tiktag download`
-2. Run anonymization on literal text or pipe text with `--stdin`
-3. Use `--json` only when you need machine-readable replacement metadata and total timings
+1. For local source checkouts, download the built-in model with `just download` or `tiktag download`
+2. Build a self-contained artifact with `just package` when distributing or deploying
+3. Run anonymization on literal text or pipe text with `--stdin`
+4. Use `--json` only when you need machine-readable replacement metadata and total timings
 
 `run` is the default path. `run-json` and `run-tokens` are helper commands for tooling and debugging.
 
 ## Prerequisites
 
+For development from source:
+
 - Rust toolchain
 - `just`
 - `hf` CLI for downloading model assets
+
+For running a packaged artifact:
+
+- no Rust toolchain
+- no `hf` CLI
 
 ## Commands
 
@@ -24,12 +32,23 @@ Build and test:
 
 - `just build`
 - `just test`
+- `just clippy`
 - `just test-fixtures`
 
 Download model assets:
 
 - `just download`
 - `cargo run -- download`
+
+Create and verify a packaged artifact:
+
+- `just package`
+- `just smoke-package`
+
+Run from packaged artifact root (`dist/tiktag`):
+
+- `echo "Contact Maria at maria@example.com" | ./dist/tiktag/tiktag --stdin`
+- `echo "Contact Maria at maria@example.com" | ./dist/tiktag/tiktag --stdin --json`
 
 Run anonymization:
 
@@ -56,30 +75,8 @@ The internal config keeps the historical TOML shape:
 
 `model_dir` is resolved relative to the config file directory.
 
-Each local model bundle must contain:
+Model bundle must contain:
 
 - `tokenizer.json`
 - `config.json`
 - `onnx/model_quantized.onnx`
-
-Model directories under `models/` are local developer assets. They are ignored by git. `models/profiles.toml` stays tracked.
-
-## JSON Output
-
-`--json` emits:
-
-- `profile`
-- `anonymized_text`
-- `replacements`
-- `placeholder_map`
-- `stats`
-
-Nested timings live under `stats.timings.load.total_ms` and `stats.timings.infer.total_ms`.
-
-## Current Limits
-
-- ONNX-only inference
-- Strict quantized ONNX bundle contract
-- Sliding-window inference requires `overlap_tokens > 0`
-- Fixture regression tests require local downloaded model assets
-- Placeholder reuse is stable only within one document
