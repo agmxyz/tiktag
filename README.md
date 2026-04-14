@@ -54,13 +54,13 @@ Run from packaged artifact root (`dist/tiktag`):
 
 Run anonymization:
 
-- `just run "Maria Garcia from OpenAI visited Berlin on 2024-05-01."`
+- `just run "Maria Garcia from OpenAI visited Berlin."`
 - `just sample`
-- `cat testdocs/eu_pii_windowed_input.md | cargo run -- --stdin --json`
-- `cat testdocs/eu_pii_windowed_input.md | cargo run -- --stdin --debug-json`
-- `cat testdocs/eu_pii_windowed_input.md | just run-stdin`
-- `cat testdocs/eu_pii_windowed_input.md | just run-json-stdin`
-- `cat testdocs/eu_pii_windowed_input.md | just run-debug-json-stdin`
+- `cat testdocs/xenova_ner_windowed_input.md | cargo run -- --stdin --json`
+- `cat testdocs/xenova_ner_windowed_input.md | cargo run -- --stdin --debug-json`
+- `cat testdocs/xenova_ner_windowed_input.md | just run-stdin`
+- `cat testdocs/xenova_ner_windowed_input.md | just run-json-stdin`
+- `cat testdocs/xenova_ner_windowed_input.md | just run-debug-json-stdin`
 
 `run-json` is safe machine-readable output. `run-debug-json` includes reversible metadata for local debugging. `run-tokens` is for token-level debugging on stderr.
 

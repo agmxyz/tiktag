@@ -1,7 +1,7 @@
 // CLI argument definitions.
 //
 // `tiktag "text"` remains the default run path.
-// `tiktag download` fetches the built-in eu-pii model assets.
+// `tiktag download` fetches the built-in Xenova model assets.
 
 use std::ffi::OsString;
 

@@ -1,7 +1,5 @@
 use std::collections::BTreeMap;
 use std::fmt;
-use std::net::IpAddr;
-use std::str::FromStr;
 
 use serde::Serialize;
 
@@ -10,79 +8,25 @@ use crate::decode::EntitySpan;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PlaceholderFamily {
-    Date,
     Person,
-    Email,
-    Phone,
     Org,
-    OrgId,
-    PersonId,
-    DocId,
-    Account,
-    BankAccount,
-    Card,
-    CardSecurity,
-    Ip,
-    Url,
-    Address,
     Location,
-    Dob,
-    Secret,
-    DeviceId,
-    VehicleId,
-    Handle,
 }
 
 impl PlaceholderFamily {
     fn as_str(self) -> &'static str {
         match self {
-            Self::Date => "DATE",
             Self::Person => "PERSON",
-            Self::Email => "EMAIL",
-            Self::Phone => "PHONE",
             Self::Org => "ORG",
-            Self::OrgId => "ORG_ID",
-            Self::PersonId => "PERSON_ID",
-            Self::DocId => "DOC_ID",
-            Self::Account => "ACCOUNT",
-            Self::BankAccount => "BANK_ACCOUNT",
-            Self::Card => "CARD",
-            Self::CardSecurity => "CARD_SECURITY",
-            Self::Ip => "IP",
-            Self::Url => "URL",
-            Self::Address => "ADDRESS",
             Self::Location => "LOCATION",
-            Self::Dob => "DOB",
-            Self::Secret => "SECRET",
-            Self::DeviceId => "DEVICE_ID",
-            Self::VehicleId => "VEHICLE_ID",
-            Self::Handle => "HANDLE",
         }
     }
 
     fn priority_rank(self) -> u8 {
         match self {
-            Self::Secret => 0,
-            Self::Email => 1,
-            Self::Url => 2,
-            Self::Ip => 3,
-            Self::BankAccount => 4,
-            Self::Card => 5,
-            Self::CardSecurity => 6,
-            Self::PersonId => 7,
-            Self::DocId => 8,
-            Self::OrgId => 9,
-            Self::Account => 10,
-            Self::DeviceId => 11,
-            Self::VehicleId => 12,
-            Self::Phone => 13,
-            Self::Dob => 14,
-            Self::Date => 15,
-            Self::Address => 16,
-            Self::Person => 17,
-            Self::Org => 18,
-            Self::Location => 19,
-            Self::Handle => 20,
+            Self::Person => 0,
+            Self::Org => 1,
+            Self::Location => 2,
         }
     }
 }
@@ -277,28 +221,11 @@ fn count_replacements_by_family(replacements: &[Replacement]) -> BTreeMap<String
 }
 
 fn map_label_to_family(label: &str) -> Option<PlaceholderFamily> {
+    // DATE intentionally dropped for Xenova baseline due unstable detection.
     match label {
-        "PER" | "PERSON_NAME" | "PERSON_ALIAS" | "PROPER_NAME" => Some(PlaceholderFamily::Person),
-        "EMAIL_ADDRESS" => Some(PlaceholderFamily::Email),
-        "PHONE_NUMBER" => Some(PlaceholderFamily::Phone),
-        "ORG" | "ORGANIZATION_NAME" => Some(PlaceholderFamily::Org),
-        "ORGANIZATION_IDENTIFIER" => Some(PlaceholderFamily::OrgId),
-        "PERSON_IDENTIFIER" => Some(PlaceholderFamily::PersonId),
-        "DOCUMENT_IDENTIFIER" | "DOCUMENT_REFERENCE" => Some(PlaceholderFamily::DocId),
-        "ACCOUNT_IDENTIFIER" => Some(PlaceholderFamily::Account),
-        "BANK_ACCOUNT_IDENTIFIER" => Some(PlaceholderFamily::BankAccount),
-        "PAYMENT_CARD" => Some(PlaceholderFamily::Card),
-        "PAYMENT_CARD_SECURITY" => Some(PlaceholderFamily::CardSecurity),
-        "IP_ADDRESS" => Some(PlaceholderFamily::Ip),
-        "IDENTIFYING_LINK" => Some(PlaceholderFamily::Url),
-        "POSTAL_ADDRESS" => Some(PlaceholderFamily::Address),
-        "LOC" | "LOCATION" | "GEO_LOCATION" => Some(PlaceholderFamily::Location),
-        "DATE" => Some(PlaceholderFamily::Date),
-        "DATE_OF_BIRTH" => Some(PlaceholderFamily::Dob),
-        "AUTH_SECRET" => Some(PlaceholderFamily::Secret),
-        "DEVICE_IDENTIFIER" => Some(PlaceholderFamily::DeviceId),
-        "VEHICLE_IDENTIFIER" => Some(PlaceholderFamily::VehicleId),
-        "CONTACT_HANDLE" => Some(PlaceholderFamily::Handle),
+        "PER" => Some(PlaceholderFamily::Person),
+        "ORG" => Some(PlaceholderFamily::Org),
+        "LOC" => Some(PlaceholderFamily::Location),
         _ => None,
     }
 }
@@ -309,56 +236,23 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
     }
 
     let lower = text.to_ascii_lowercase();
-    let alnum_count = text.chars().filter(|ch| ch.is_alphanumeric()).count();
-    let digit_count = text.chars().filter(|ch| ch.is_ascii_digit()).count();
     let letter_count = text.chars().filter(|ch| ch.is_alphabetic()).count();
+    let digit_count = text.chars().filter(|ch| ch.is_ascii_digit()).count();
 
     match family {
-        PlaceholderFamily::Email => is_valid_email(text),
-        PlaceholderFamily::Url => lower.starts_with("http://") || lower.starts_with("https://"),
-        PlaceholderFamily::Ip => IpAddr::from_str(text).is_ok(),
-        PlaceholderFamily::Phone => digit_count >= 7,
-        PlaceholderFamily::BankAccount => digit_count >= 12 && text.len() >= 18,
-        PlaceholderFamily::Account => digit_count >= 6 && text.len() >= 8,
-        PlaceholderFamily::Card => (12..=19).contains(&digit_count) && text.len() >= 14,
-        PlaceholderFamily::DocId
-        | PlaceholderFamily::PersonId
-        | PlaceholderFamily::OrgId
-        | PlaceholderFamily::DeviceId
-        | PlaceholderFamily::VehicleId => {
-            alnum_count >= 6 && digit_count >= 2 && (letter_count > 0 || digit_count >= 7)
+        PlaceholderFamily::Person => {
+            letter_count >= 2 && !is_common_junk_token(&lower)
         }
-        PlaceholderFamily::CardSecurity => {
-            text.chars().all(|ch| ch.is_ascii_digit()) && (3..=4).contains(&text.len())
-        }
-        PlaceholderFamily::Address => {
-            letter_count >= 5
-                && digit_count > 0
-                && first_alpha_is_uppercase(text)
-                && !is_common_junk_token(&lower)
-        }
-        PlaceholderFamily::Location => {
-            letter_count >= 2 && digit_count == 0 && !is_common_junk_token(&lower)
-        }
-        PlaceholderFamily::Person => letter_count >= 2 && !is_common_junk_token(&lower),
         PlaceholderFamily::Org => {
             !text.contains('@')
                 && !(text.contains('.') && text == lower)
                 && letter_count >= 2
                 && !is_common_junk_token(&lower)
         }
-        PlaceholderFamily::Date => alnum_count >= 3,
-        PlaceholderFamily::Dob => alnum_count >= 4 && digit_count >= 1,
-        PlaceholderFamily::Secret => alnum_count >= 4,
-        PlaceholderFamily::Handle => alnum_count >= 2,
+        PlaceholderFamily::Location => {
+            letter_count >= 2 && digit_count == 0 && !is_common_junk_token(&lower)
+        }
     }
-}
-
-fn is_valid_email(text: &str) -> bool {
-    let Some((_, domain)) = text.split_once('@') else {
-        return false;
-    };
-    !domain.is_empty() && domain.contains('.')
 }
 
 fn is_common_junk_token(lower: &str) -> bool {
@@ -366,12 +260,6 @@ fn is_common_junk_token(lower: &str) -> bool {
         lower,
         "." | "," | "example" | "http" | "https" | "www" | "com" | "org" | "net" | "es"
     )
-}
-
-fn first_alpha_is_uppercase(text: &str) -> bool {
-    text.chars()
-        .find(|ch| ch.is_alphabetic())
-        .is_some_and(|ch| ch.is_uppercase())
 }
 
 #[cfg(test)]
@@ -394,31 +282,22 @@ mod tests {
 
     #[test]
     fn reuses_exact_repeated_values() {
-        let text = "Laura met Laura again.";
-        let result = anonymize_ok(
-            text,
-            &[
-                span("PERSON_NAME", 0, 5, "Laura"),
-                span("PERSON_NAME", 10, 15, "Laura"),
-            ],
-        );
+        let text = "Satya met Satya again.";
+        let result = anonymize_ok(text, &[span("PER", 0, 5, "Satya"), span("PER", 10, 15, "Satya")]);
 
         assert_eq!(result.anonymized_text, "[PERSON_1] met [PERSON_1] again.");
         assert_eq!(
             result.placeholder_map.get("[PERSON_1]"),
-            Some(&"Laura".to_owned())
+            Some(&"Satya".to_owned())
         );
     }
 
     #[test]
     fn increments_placeholders_for_distinct_values_in_same_family() {
-        let text = "Laura met Lukas.";
+        let text = "Satya met Sundar.";
         let result = anonymize_ok(
             text,
-            &[
-                span("PERSON_NAME", 0, 5, "Laura"),
-                span("PERSON_NAME", 10, 15, "Lukas"),
-            ],
+            &[span("PER", 0, 5, "Satya"), span("PER", 10, 16, "Sundar")],
         );
 
         assert_eq!(result.anonymized_text, "[PERSON_1] met [PERSON_2].");
@@ -427,7 +306,7 @@ mod tests {
     #[test]
     fn ignores_excluded_labels() {
         let text = "Condition diabetes was mentioned.";
-        let result = anonymize_ok(text, &[span("HEALTH_DATA", 10, 18, "diabetes")]);
+        let result = anonymize_ok(text, &[span("MISC", 10, 18, "diabetes")]);
 
         assert_eq!(result.anonymized_text, text);
         assert!(result.replacements.is_empty());
@@ -438,10 +317,7 @@ mod tests {
         let text = "example .";
         let result = anonymize_ok(
             text,
-            &[
-                span("ORGANIZATION_NAME", 0, 7, "example"),
-                span("ACCOUNT_IDENTIFIER", 8, 9, "."),
-            ],
+            &[span("ORG", 0, 7, "example"), span("LOC", 8, 9, ".")],
         );
 
         assert!(result.replacements.is_empty());
@@ -449,87 +325,11 @@ mod tests {
     }
 
     #[test]
-    fn prefers_email_over_overlapping_org() {
-        let text = "Reach me at laura@example.com today.";
-        let result = anonymize_ok(
-            text,
-            &[
-                span("EMAIL_ADDRESS", 12, 29, "laura@example.com"),
-                span("ORGANIZATION_NAME", 18, 29, "example.com"),
-            ],
-        );
-
-        assert_eq!(result.replacements.len(), 1);
-        assert_eq!(result.replacements[0].family, PlaceholderFamily::Email);
-    }
-
-    #[test]
-    fn prefers_url_over_overlapping_location() {
-        let text = "Visit https://madrid.example/path now.";
-        let result = anonymize_ok(
-            text,
-            &[
-                span("IDENTIFYING_LINK", 6, 33, "https://madrid.example/path"),
-                span("LOCATION", 14, 20, "madrid"),
-            ],
-        );
-
-        assert_eq!(result.replacements.len(), 1);
-        assert_eq!(result.replacements[0].family, PlaceholderFamily::Url);
-    }
-
-    #[test]
-    fn prefers_address_over_overlapping_location() {
-        let text = "Send mail to Calle de Alcala 147, 28009 Madrid.";
-        let result = anonymize_ok(
-            text,
-            &[
-                span(
-                    "POSTAL_ADDRESS",
-                    13,
-                    45,
-                    "Calle de Alcala 147, 28009 Madrid",
-                ),
-                span("LOCATION", 37, 43, "Madrid"),
-            ],
-        );
-
-        assert_eq!(result.replacements.len(), 1);
-        assert_eq!(result.replacements[0].family, PlaceholderFamily::Address);
-    }
-
-    #[test]
-    fn prefers_bank_account_over_overlapping_person() {
-        let text = "Account DE44 5001 0517 5407 3249 31 belongs to Laura.";
-        let result = anonymize_ok(
-            text,
-            &[
-                span(
-                    "BANK_ACCOUNT_IDENTIFIER",
-                    8,
-                    35,
-                    "DE44 5001 0517 5407 3249 31",
-                ),
-                span("PERSON_NAME", 8, 12, "DE44"),
-            ],
-        );
-
-        assert_eq!(result.replacements.len(), 1);
-        assert_eq!(
-            result.replacements[0].family,
-            PlaceholderFamily::BankAccount
-        );
-    }
-
-    #[test]
     fn preserves_untouched_text_around_rewrites() {
-        let text = "Hello Laura, welcome to Madrid.";
+        let text = "Hello Satya, welcome to London.";
         let result = anonymize_ok(
             text,
-            &[
-                span("PERSON_NAME", 6, 11, "Laura"),
-                span("LOCATION", 24, 30, "Madrid"),
-            ],
+            &[span("PER", 6, 11, "Satya"), span("LOC", 24, 30, "London")],
         );
 
         assert_eq!(
@@ -539,26 +339,15 @@ mod tests {
     }
 
     #[test]
-    fn prefers_full_address_over_fragment_in_same_cluster() {
-        let text = "Send mail to Calle de Alcala 147, 28009 Madrid.";
+    fn prefers_full_span_over_fragment_in_same_cluster() {
+        let text = "Satya Nadella arrived.";
         let result = anonymize_ok(
             text,
-            &[
-                span("POSTAL_ADDRESS", 13, 18, "Calle"),
-                span(
-                    "POSTAL_ADDRESS",
-                    13,
-                    45,
-                    "Calle de Alcala 147, 28009 Madrid",
-                ),
-            ],
+            &[span("PER", 0, 5, "Satya"), span("PER", 0, 13, "Satya Nadella")],
         );
 
         assert_eq!(result.replacements.len(), 1);
-        assert_eq!(
-            result.replacements[0].original,
-            "Calle de Alcala 147, 28009 Madrid"
-        );
+        assert_eq!(result.replacements[0].original, "Satya Nadella");
     }
 
     #[test]
@@ -571,20 +360,6 @@ mod tests {
     }
 
     #[test]
-    fn rejects_short_numeric_account_fragments() {
-        let text = "Codes 2100 and 0418 4502.";
-        let result = anonymize_ok(
-            text,
-            &[
-                span("ACCOUNT_IDENTIFIER", 6, 10, "2100"),
-                span("CARD", 15, 24, "0418 4502"),
-            ],
-        );
-
-        assert!(result.replacements.is_empty());
-    }
-
-    #[test]
     fn accepts_standard_per_label_without_uppercase() {
         let text = "maria arrived.";
         let result = anonymize_ok(text, &[span("PER", 0, 5, "maria")]);
@@ -593,19 +368,11 @@ mod tests {
     }
 
     #[test]
-    fn accepts_standard_loc_label_without_uppercase() {
-        let text = "berlin office";
-        let result = anonymize_ok(text, &[span("LOC", 0, 6, "berlin")]);
+    fn accepts_multilingual_location_label() {
+        let text = "\u{00E0}rea central";
+        let result = anonymize_ok(text, &[span("LOC", 0, 5, "\u{00E0}rea")]);
 
-        assert_eq!(result.anonymized_text, "[LOCATION_1] office");
-    }
-
-    #[test]
-    fn maps_standard_date_label_to_date_placeholder() {
-        let text = "2024-05-01 deadline";
-        let result = anonymize_ok(text, &[span("DATE", 0, 10, "2024-05-01")]);
-
-        assert_eq!(result.anonymized_text, "[DATE_1] deadline");
-        assert_eq!(result.replacements[0].family, PlaceholderFamily::Date);
+        assert_eq!(result.anonymized_text, "[LOCATION_1] central");
+        assert_eq!(result.replacements[0].family, PlaceholderFamily::Location);
     }
 }

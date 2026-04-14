@@ -344,7 +344,7 @@ mod tests {
 
     fn sample_anonymization_result() -> AnonymizationResult {
         AnonymizationResult {
-            anonymized_text: "[PERSON_1] emailed [EMAIL_1]".to_owned(),
+            anonymized_text: "[PERSON_1] works at [ORG_1]".to_owned(),
             replacements: vec![
                 Replacement {
                     start: 0,
@@ -354,18 +354,18 @@ mod tests {
                     original: "Maria".to_owned(),
                 },
                 Replacement {
-                    start: 14,
-                    end: 31,
-                    family: PlaceholderFamily::Email,
-                    placeholder: "[EMAIL_1]".to_owned(),
-                    original: "maria@example.com".to_owned(),
+                    start: 15,
+                    end: 21,
+                    family: PlaceholderFamily::Org,
+                    placeholder: "[ORG_1]".to_owned(),
+                    original: "OpenAI".to_owned(),
                 },
             ],
             placeholder_map: BTreeMap::from([
                 ("[PERSON_1]".to_owned(), "Maria".to_owned()),
-                ("[EMAIL_1]".to_owned(), "maria@example.com".to_owned()),
+                ("[ORG_1]".to_owned(), "OpenAI".to_owned()),
             ]),
-            counts_by_family: BTreeMap::from([("PERSON".to_owned(), 1), ("EMAIL".to_owned(), 1)]),
+            counts_by_family: BTreeMap::from([("PERSON".to_owned(), 1), ("ORG".to_owned(), 1)]),
             detected_entity_count: 3,
             accepted_replacement_count: 2,
         }
@@ -387,7 +387,7 @@ mod tests {
         assert_eq!(json["schema_version"], Value::from(1));
         assert_eq!(
             json["anonymized_text"],
-            Value::from("[PERSON_1] emailed [EMAIL_1]")
+            Value::from("[PERSON_1] works at [ORG_1]")
         );
         assert_eq!(json["stats"]["accepted_replacement_count"], Value::from(2));
         assert_eq!(json["provenance"]["app_version"], Value::from("0.1.0"));

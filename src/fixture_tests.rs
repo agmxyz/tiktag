@@ -192,12 +192,12 @@ fn run_fixture(base_name: &str) -> anyhow::Result<()> {
 
 #[test]
 #[ignore = "requires local downloaded model assets; run `just test-fixtures`"]
-fn fixture_regression_eu_pii_windowed() -> anyhow::Result<()> {
-    run_fixture("eu_pii_windowed")
+fn fixture_regression_xenova_ner_windowed() -> anyhow::Result<()> {
+    run_fixture("xenova_ner_windowed")
 }
 
 #[test]
 #[ignore = "requires local downloaded model assets; run `just test-fixtures`"]
-fn fixture_regression_eu_pii_stress_windowed() -> anyhow::Result<()> {
-    run_fixture("eu_pii_stress_windowed")
+fn fixture_regression_xenova_ner_stress_windowed() -> anyhow::Result<()> {
+    run_fixture("xenova_ner_stress_windowed")
 }

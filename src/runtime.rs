@@ -532,8 +532,9 @@ mod tests {
     fn validates_matching_declared_label_count() {
         let outputs = vec![tensor_output("logits", vec![1, -1, 9])];
 
-        let output_name = validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
-            .expect("matching schema should validate");
+        let output_name =
+            validate_logits_output_metadata("distilbert_ner_hrl", &labels(9), &outputs)
+                .expect("matching schema should validate");
 
         assert_eq!(output_name, "logits");
     }
@@ -542,7 +543,7 @@ mod tests {
     fn rejects_declared_label_count_mismatch() {
         let outputs = vec![tensor_output("logits", vec![1, -1, 8])];
 
-        let err = validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+        let err = validate_logits_output_metadata("distilbert_ner_hrl", &labels(9), &outputs)
             .expect_err("mismatch should fail");
 
         assert!(err.to_string().contains("label schema mismatch"));
@@ -552,13 +553,13 @@ mod tests {
     fn skips_declared_count_check_for_dynamic_label_dimension() {
         let outputs = vec![tensor_output("logits", vec![1, -1, -1])];
 
-        validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+        validate_logits_output_metadata("distilbert_ner_hrl", &labels(9), &outputs)
             .expect("dynamic label dimension should be allowed");
     }
 
     #[test]
     fn rejects_missing_outputs() {
-        let err = validate_logits_output_metadata("eu_pii", &labels(9), &[])
+        let err = validate_logits_output_metadata("distilbert_ner_hrl", &labels(9), &[])
             .expect_err("missing outputs should fail");
 
         assert!(err.to_string().contains("has no outputs"));
@@ -575,7 +576,7 @@ mod tests {
             })),
         )];
 
-        let err = validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+        let err = validate_logits_output_metadata("distilbert_ner_hrl", &labels(9), &outputs)
             .expect_err("non-tensor outputs should fail");
 
         assert!(err.to_string().contains("is not a tensor"));
@@ -585,7 +586,7 @@ mod tests {
     fn rejects_wrong_rank_outputs() {
         let outputs = vec![tensor_output("logits", vec![1, 9])];
 
-        let err = validate_logits_output_metadata("eu_pii", &labels(9), &outputs)
+        let err = validate_logits_output_metadata("distilbert_ner_hrl", &labels(9), &outputs)
             .expect_err("wrong rank should fail");
 
         assert!(err.to_string().contains("expected rank-3 logits"));
@@ -593,8 +594,13 @@ mod tests {
 
     #[test]
     fn rejects_runtime_logits_shape_mismatch() {
-        let err = validate_runtime_logits_shape("eu_pii", "logits", &labels(9), &[1, 32, 8])
-            .expect_err("runtime mismatch should fail");
+        let err = validate_runtime_logits_shape(
+            "distilbert_ner_hrl",
+            "logits",
+            &labels(9),
+            &[1, 32, 8],
+        )
+        .expect_err("runtime mismatch should fail");
 
         assert!(err.to_string().contains("produced logits with 8 labels"));
     }
@@ -610,7 +616,7 @@ mod tests {
 
     #[test]
     fn rejects_sequence_lengths_over_profile_limit() {
-        let err = ensure_sequence_within_limit("eu_pii", 513, 512)
+        let err = ensure_sequence_within_limit("distilbert_ner_hrl", 513, 512)
             .expect_err("limit overflow should fail");
 
         let message = err.to_string();

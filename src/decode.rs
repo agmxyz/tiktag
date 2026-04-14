@@ -1,7 +1,5 @@
 // Post-processing: turns raw ONNX logits into merged entity spans for the
-// built-in eu-pii model. The merge logic is intentionally narrow: it accepts
-// BIO-prefixed tags when present, but applies the relaxed eu-pii heuristics
-// for emails, phones, and common label noise.
+// built-in Xenova DistilBERT NER model. Merge rules are strict BIO only.
 
 use ndarray::ArrayView3;
 use serde::Serialize;
@@ -41,7 +39,7 @@ pub fn argmax_label_indices(logits: ArrayView3<'_, f32>) -> Vec<usize> {
 }
 
 /// Walk token predictions and merge adjacent tokens into entity spans.
-/// Skips special tokens ([CLS]/[SEP]) and "O" labels. Merge behavior depends on strategy.
+/// Skips special tokens ([CLS]/[SEP]), invalid offsets, and non-BIO labels.
 pub fn decode_entities(
     text: &str,
     encoding: &Encoding,
@@ -77,11 +75,10 @@ pub fn decode_entities(
             continue;
         }
 
-        let (prefix, kind) = split_label(label);
-        if kind == "O" {
+        let Some((prefix, kind)) = split_bio_label(label) else {
             flush_entity(&mut current, &mut entities);
             continue;
-        }
+        };
 
         let merge_label = current
             .as_ref()
@@ -118,14 +115,17 @@ pub fn decode_entities(
     entities
 }
 
-/// Splits a BIO-style label like "B-PER" into ("B", "PER").
-/// Some models (e.g. eu-pii) emit bare labels like "EMAIL_ADDRESS" without a BIO prefix.
-/// Those are treated as a B-tag (begin) so they start a new entity span.
-fn split_label(label: &str) -> (&str, &str) {
-    match label.split_once('-') {
-        Some((prefix, kind)) if !kind.is_empty() => (prefix, kind),
-        _ => ("B", label),
+/// Splits a strict BIO label like "B-PER" into ("B", "PER").
+/// Any bare or malformed label is ignored by decode_entities.
+fn split_bio_label(label: &str) -> Option<(&str, &str)> {
+    let (prefix, kind) = label.split_once('-')?;
+    if kind.is_empty() {
+        return None;
     }
+    if prefix == "B" || prefix == "I" {
+        return Some((prefix, kind));
+    }
+    None
 }
 
 fn flush_entity(current: &mut Option<EntitySpan>, entities: &mut Vec<EntitySpan>) {
@@ -135,30 +135,14 @@ fn flush_entity(current: &mut Option<EntitySpan>, entities: &mut Vec<EntitySpan>
 }
 
 /// Decide if the next token should merge into the current entity span.
-/// Returns Some(label) if yes, None if the token starts a new span.
+/// Returns Some(label) if yes, None if token starts a new span.
 fn merged_label<'a>(current: &'a str, next: &'a str, prefix: &str, gap: &str) -> Option<&'a str> {
-    if current == next {
-        let can_merge = match current {
-            "EMAIL_ADDRESS" => gap.is_empty() || gap.chars().all(|ch| "._-+@".contains(ch)),
-            "PHONE_NUMBER" => gap
-                .chars()
-                .all(|ch| ch.is_whitespace() || "+-()./".contains(ch)),
-            // The eu-pii model sometimes emits repeated B-tags across subword fragments
-            // inside one lexical token (for example "M" + "ARIO"). Keep those together
-            // when there is no byte gap; otherwise require a normal I-tag continuation.
-            _ => gap.is_empty() || (prefix == "I" && is_generic_gap(gap)),
-        };
-
-        if can_merge {
-            return Some(current);
-        }
+    if current != next {
+        return None;
     }
 
-    // Model-specific heuristic: the eu-pii model frequently classifies the domain part of
-    // an email (e.g. "@company.com") as ORGANIZATION_NAME. When this immediately follows an
-    // EMAIL_ADDRESS token, absorb it into the email span.
-    if current == "EMAIL_ADDRESS" && next == "ORGANIZATION_NAME" && gap.is_empty() {
-        return Some("EMAIL_ADDRESS");
+    if gap.is_empty() || (prefix == "I" && is_generic_gap(gap)) {
+        return Some(current);
     }
 
     None
@@ -222,57 +206,48 @@ mod tests {
     }
 
     #[test]
-    fn merges_zero_gap_same_label_fragments_even_with_b_prefix() {
-        let text = "MARIO";
-        let encoding = test_encoding(&["M", "ARIO"], &[(0, 1), (1, 5)]);
-        let predictions = vec![1, 1];
-        let labels = vec!["O", "B-PERSON_NAME"]
+    fn merges_zero_gap_subword_fragments() {
+        let text = "Microsoft";
+        let encoding = test_encoding(&["Micro", "soft"], &[(0, 5), (5, 9)]);
+        let predictions = vec![1, 2];
+        let labels = vec!["O", "B-ORG", "I-ORG"]
             .into_iter()
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
         let entities = decode_entities(text, &encoding, &predictions, &labels);
 
-        assert_eq!(entities, vec![span("PERSON_NAME", 0, 5, "MARIO")]);
+        assert_eq!(entities, vec![span("ORG", 0, 9, "Microsoft")]);
     }
 
     #[test]
-    fn merges_relaxed_email_tokens() {
-        let text = "alice@example.com";
-        let encoding = test_encoding(&["alice", "@example", ".com"], &[(0, 5), (5, 13), (13, 17)]);
-        let predictions = vec![1, 2, 2];
-        let labels = vec!["O", "B-EMAIL_ADDRESS", "I-EMAIL_ADDRESS"]
+    fn merges_org_bio_continuation_with_whitespace() {
+        let text = "Open AI";
+        let encoding = test_encoding(&["Open", "AI"], &[(0, 4), (5, 7)]);
+        let predictions = vec![1, 2];
+        let labels = vec!["O", "B-ORG", "I-ORG"]
             .into_iter()
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
         let entities = decode_entities(text, &encoding, &predictions, &labels);
 
-        assert_eq!(
-            entities,
-            vec![span("EMAIL_ADDRESS", 0, 17, "alice@example.com")]
-        );
+        assert_eq!(entities, vec![span("ORG", 0, 7, "Open AI")]);
     }
 
     #[test]
-    fn merges_relaxed_phone_tokens() {
-        let text = "+39 347 123 4567";
-        let encoding = test_encoding(
-            &["+39", "347", "123", "4567"],
-            &[(0, 3), (4, 7), (8, 11), (12, 16)],
-        );
-        let predictions = vec![1, 2, 2, 2];
-        let labels = vec!["O", "B-PHONE_NUMBER", "I-PHONE_NUMBER"]
+    fn merges_loc_bio_continuation_with_whitespace() {
+        let text = "New York";
+        let encoding = test_encoding(&["New", "York"], &[(0, 3), (4, 8)]);
+        let predictions = vec![1, 2];
+        let labels = vec!["O", "B-LOC", "I-LOC"]
             .into_iter()
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
         let entities = decode_entities(text, &encoding, &predictions, &labels);
 
-        assert_eq!(
-            entities,
-            vec![span("PHONE_NUMBER", 0, 16, "+39 347 123 4567")]
-        );
+        assert_eq!(entities, vec![span("LOC", 0, 8, "New York")]);
     }
 
     #[test]
@@ -296,7 +271,6 @@ mod tests {
     #[test]
     fn skips_special_tokens() {
         let text = "John";
-        // Simulates [CLS] John [SEP] — special tokens at positions 0 and 2.
         let encoding = test_encoding_with_mask(
             &["[CLS]", "John", "[SEP]"],
             &[(0, 0), (0, 4), (0, 0)],
@@ -314,22 +288,17 @@ mod tests {
     }
 
     #[test]
-    fn handles_bare_labels_without_bio_prefix() {
-        // The eu-pii model emits bare labels like "EMAIL_ADDRESS" (no B-/I- prefix).
-        // split_label treats these as B-tags, starting a new entity span.
-        let text = "alice@example.com";
-        let encoding = test_encoding(&["alice", "@example", ".com"], &[(0, 5), (5, 13), (13, 17)]);
-        let predictions = vec![1, 1, 1];
-        let labels = vec!["O", "EMAIL_ADDRESS"]
+    fn ignores_bare_labels_without_bio_prefix() {
+        let text = "alice";
+        let encoding = test_encoding(&["alice"], &[(0, 5)]);
+        let predictions = vec![1];
+        let labels = vec!["O", "PER"]
             .into_iter()
             .map(str::to_owned)
             .collect::<Vec<_>>();
 
         let entities = decode_entities(text, &encoding, &predictions, &labels);
 
-        assert_eq!(
-            entities,
-            vec![span("EMAIL_ADDRESS", 0, 17, "alice@example.com")]
-        );
+        assert!(entities.is_empty());
     }
 }

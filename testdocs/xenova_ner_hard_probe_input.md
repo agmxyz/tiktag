@@ -1,6 +1,6 @@
 # Incident Review Packet
 
-This document is a realistic exploratory input for harder entity families outside built-in multilingual NER sweet spot. It is synthetic and intended for manual inspection rather than automated regression.
+This document is a realistic exploratory input for harder entity families outside built-in Xenova NER sweet spot. It is synthetic and intended for manual inspection rather than automated regression.
 
 ## Intake Summary
 

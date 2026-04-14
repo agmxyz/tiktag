@@ -4,8 +4,8 @@
 
 Automated regression fixtures:
 
-- `eu_pii_windowed_*`: medium-size synthetic dossier that should force multi-window inference and verify stable placeholder reuse for person, org, location, and date entities.
-- `eu_pii_stress_windowed_*`: larger bundle that pushes repeated entity values across deep sliding-window inference.
+- `xenova_ner_windowed_*`: medium-size synthetic dossier that should force multi-window inference and verify stable placeholder reuse for person, org, and location entities.
+- `xenova_ner_stress_windowed_*`: larger bundle that pushes repeated entity values across deep sliding-window inference.
 
 These expected manifests focus on anonymization behavior:
 
@@ -16,7 +16,7 @@ These expected manifests focus on anonymization behavior:
 
 Exploratory manual probes:
 
-- `eu_pii_hard_probe_input.md`
-- `eu_pii_hard_stress_input.md`
+- `xenova_ner_hard_probe_input.md`
+- `xenova_ner_hard_stress_input.md`
 
 The hard probes intentionally include entity shapes current model may miss, including emails, URLs, IPs, IDs, addresses, and bank data. They are useful for characterizing current model behavior, but they are not treated as stable pass/fail regression fixtures yet.
