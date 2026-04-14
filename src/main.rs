@@ -10,24 +10,49 @@ mod runtime;
 mod window;
 
 use std::collections::BTreeMap;
+use std::fs;
 use std::io::Read;
+use std::path::Path;
 
 use anyhow::{Context, anyhow};
 use log::info;
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 
 use crate::anonymize::{AnonymizationResult, Replacement};
+use crate::model_bundle::REQUIRED_MODEL_FILES;
 use crate::profiles::ResolvedProfile;
 use crate::runtime::{InferenceResult, InferenceTimings, LoadResult, LoadTimings, ModelRuntime};
 
-/// Structured output for --json mode. Includes anonymized text, replacement metadata, and stats.
+const JSON_SCHEMA_VERSION: u32 = 1;
+
+/// Structured output for --json mode. Safe by default: no reversible replacement metadata.
 #[derive(Debug, Serialize)]
 struct JsonOutput {
+    schema_version: u32,
+    provenance: JsonProvenance,
+    profile: String,
+    anonymized_text: String,
+    stats: JsonStats,
+}
+
+/// Structured output for --debug-json mode. Includes reversible replacement metadata.
+#[derive(Debug, Serialize)]
+struct DebugJsonOutput {
+    schema_version: u32,
+    provenance: JsonProvenance,
     profile: String,
     anonymized_text: String,
     replacements: Vec<Replacement>,
     placeholder_map: BTreeMap<String, String>,
     stats: JsonStats,
+}
+
+#[derive(Debug, Serialize)]
+struct JsonProvenance {
+    app_version: String,
+    hf_repo: String,
+    bundle_sha256: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -84,7 +109,16 @@ fn run_inference(args: cli::RunArgs) -> anyhow::Result<()> {
     } = runtime.infer(&input_text, args.show_tokens)?;
     let anonymized = crate::anonymize::anonymize(&input_text, &entities)?;
 
-    if args.json {
+    if args.debug_json {
+        print_debug_json(
+            &resolved,
+            sequence_len,
+            window_count,
+            load_timings,
+            infer_timings,
+            anonymized,
+        )?;
+    } else if args.json {
         print_json(
             &resolved,
             sequence_len,
@@ -130,7 +164,33 @@ fn print_json(
     infer_timings: InferenceTimings,
     anonymized: AnonymizationResult,
 ) -> anyhow::Result<()> {
+    let provenance = build_json_provenance(resolved)?;
     let payload = build_json_output(
+        provenance,
+        resolved,
+        sequence_len,
+        window_count,
+        load_timings,
+        infer_timings,
+        anonymized,
+    );
+
+    let json = serde_json::to_string_pretty(&payload)?;
+    println!("{json}");
+    Ok(())
+}
+
+fn print_debug_json(
+    resolved: &ResolvedProfile,
+    sequence_len: usize,
+    window_count: usize,
+    load_timings: LoadTimings,
+    infer_timings: InferenceTimings,
+    anonymized: AnonymizationResult,
+) -> anyhow::Result<()> {
+    let provenance = build_json_provenance(resolved)?;
+    let payload = build_debug_json_output(
+        provenance,
         resolved,
         sequence_len,
         window_count,
@@ -145,6 +205,7 @@ fn print_json(
 }
 
 fn build_json_output(
+    provenance: JsonProvenance,
     resolved: &ResolvedProfile,
     sequence_len: usize,
     window_count: usize,
@@ -153,6 +214,36 @@ fn build_json_output(
     anonymized: AnonymizationResult,
 ) -> JsonOutput {
     JsonOutput {
+        schema_version: JSON_SCHEMA_VERSION,
+        provenance,
+        profile: resolved.name.clone(),
+        anonymized_text: anonymized.anonymized_text,
+        stats: JsonStats {
+            sequence_len,
+            window_count,
+            detected_entity_count: anonymized.detected_entity_count,
+            accepted_replacement_count: anonymized.accepted_replacement_count,
+            counts_by_family: anonymized.counts_by_family,
+            timings: JsonTimings {
+                load: load_timings,
+                infer: infer_timings,
+            },
+        },
+    }
+}
+
+fn build_debug_json_output(
+    provenance: JsonProvenance,
+    resolved: &ResolvedProfile,
+    sequence_len: usize,
+    window_count: usize,
+    load_timings: LoadTimings,
+    infer_timings: InferenceTimings,
+    anonymized: AnonymizationResult,
+) -> DebugJsonOutput {
+    DebugJsonOutput {
+        schema_version: JSON_SCHEMA_VERSION,
+        provenance,
         profile: resolved.name.clone(),
         anonymized_text: anonymized.anonymized_text,
         replacements: anonymized.replacements,
@@ -169,6 +260,37 @@ fn build_json_output(
             },
         },
     }
+}
+
+fn build_json_provenance(resolved: &ResolvedProfile) -> anyhow::Result<JsonProvenance> {
+    let mut hasher = Sha256::new();
+    hash_bundle_file(
+        &mut hasher,
+        crate::profiles::INTERNAL_PROFILES_PATH,
+        Path::new(crate::profiles::INTERNAL_PROFILES_PATH),
+    )?;
+
+    for relative_path in REQUIRED_MODEL_FILES {
+        hash_bundle_file(
+            &mut hasher,
+            relative_path,
+            &resolved.model_dir.join(relative_path),
+        )?;
+    }
+
+    Ok(JsonProvenance {
+        app_version: env!("CARGO_PKG_VERSION").to_owned(),
+        hf_repo: resolved.hf_repo.clone(),
+        bundle_sha256: format!("{:x}", hasher.finalize()),
+    })
+}
+
+fn hash_bundle_file(hasher: &mut Sha256, label: &str, path: &Path) -> anyhow::Result<()> {
+    let bytes = fs::read(path).with_context(|| format!("failed to read {}", path.display()))?;
+    hasher.update(label.as_bytes());
+    hasher.update([0]);
+    hasher.update(bytes);
+    Ok(())
 }
 
 fn init_logging(show_tokens: bool) {
@@ -189,7 +311,7 @@ mod tests {
 
     use serde_json::Value;
 
-    use super::build_json_output;
+    use super::{build_debug_json_output, build_json_output};
     use crate::anonymize::{AnonymizationResult, PlaceholderFamily, Replacement};
     use crate::profiles::ResolvedProfile;
     use crate::runtime::{InferenceTimings, LoadTimings};
@@ -210,6 +332,14 @@ mod tests {
 
     fn sample_infer_timings(total_ms: f64) -> InferenceTimings {
         InferenceTimings { total_ms }
+    }
+
+    fn sample_provenance() -> super::JsonProvenance {
+        super::JsonProvenance {
+            app_version: "0.1.0".to_owned(),
+            hf_repo: "bardsai/eu-pii-anonimization-multilang".to_owned(),
+            bundle_sha256: "abc123".to_owned(),
+        }
     }
 
     fn sample_anonymization_result() -> AnonymizationResult {
@@ -242,8 +372,9 @@ mod tests {
     }
 
     #[test]
-    fn json_payload_includes_anonymized_text_and_stats() {
+    fn json_payload_is_safe_by_default() {
         let payload = build_json_output(
+            sample_provenance(),
             &resolved_profile(),
             27,
             1,
@@ -253,12 +384,13 @@ mod tests {
         );
 
         let json = serde_json::to_value(payload).expect("json");
+        assert_eq!(json["schema_version"], Value::from(1));
         assert_eq!(
             json["anonymized_text"],
             Value::from("[PERSON_1] emailed [EMAIL_1]")
         );
         assert_eq!(json["stats"]["accepted_replacement_count"], Value::from(2));
-        assert_eq!(json["placeholder_map"]["[PERSON_1]"], Value::from("Maria"));
+        assert_eq!(json["provenance"]["app_version"], Value::from("0.1.0"));
         assert_eq!(
             json["stats"]["timings"]["load"]["total_ms"],
             Value::from(46.0)
@@ -267,11 +399,14 @@ mod tests {
             json["stats"]["timings"]["infer"]["total_ms"],
             Value::from(11.5)
         );
+        assert!(json.get("placeholder_map").is_none());
+        assert!(json.get("replacements").is_none());
     }
 
     #[test]
     fn json_payload_includes_counts_and_total_timings() {
         let payload = build_json_output(
+            sample_provenance(),
             &resolved_profile(),
             976,
             3,
@@ -292,5 +427,23 @@ mod tests {
             Value::from(16.5)
         );
         assert!(json["stats"].get("timings_ms").is_none());
+    }
+
+    #[test]
+    fn debug_json_payload_includes_reversible_metadata() {
+        let payload = build_debug_json_output(
+            sample_provenance(),
+            &resolved_profile(),
+            27,
+            1,
+            sample_load_timings(),
+            sample_infer_timings(11.5),
+            sample_anonymization_result(),
+        );
+
+        let json = serde_json::to_value(payload).expect("json");
+        assert_eq!(json["schema_version"], Value::from(1));
+        assert_eq!(json["placeholder_map"]["[PERSON_1]"], Value::from("Maria"));
+        assert_eq!(json["replacements"][0]["original"], Value::from("Maria"));
     }
 }

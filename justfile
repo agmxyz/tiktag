@@ -27,6 +27,9 @@ run text:
 run-json text:
     cargo run -- --json "{{ text }}"
 
+run-debug-json text:
+    cargo run -- --debug-json "{{ text }}"
+
 run-tokens text:
     RUST_LOG=debug cargo run -- --show-tokens "{{ text }}"
 
@@ -35,6 +38,9 @@ run-stdin:
 
 run-json-stdin:
     cargo run -- --stdin --json
+
+run-debug-json-stdin:
+    cargo run -- --stdin --debug-json
 
 sample:
     cargo run -- "Contact Maria Rossi at maria.rossi@example.it or +39 347 123 4567 in Milan."
@@ -59,4 +65,4 @@ package:
 smoke-package:
     just package
     (cd dist/tiktag && PATH=/usr/bin:/bin; printf "Contact Maria at maria@example.com\n" | ./tiktag --stdin | grep "\[PERSON_1\]" >/dev/null)
-    (cd dist/tiktag && PATH=/usr/bin:/bin; printf "Contact Maria at maria@example.com\n" | ./tiktag --stdin --json | grep "\"anonymized_text\"" >/dev/null)
+    (cd dist/tiktag && PATH=/usr/bin:/bin; printf "Contact Maria at maria@example.com\n" | ./tiktag --stdin --json | grep "\"schema_version\": 1" >/dev/null)

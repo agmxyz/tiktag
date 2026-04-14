@@ -11,7 +11,7 @@ use clap::Parser;
 #[command(
     name = "tiktag",
     about = "eu-pii text anonymization CLI",
-    after_help = "Download model assets with `tiktag download`.\nUse `--stdin` to read input text from standard input.\nUse `tiktag -- download` to run anonymization on the literal text `download`."
+    after_help = "Download model assets with `tiktag download`.\nUse `--stdin` to read input text from standard input.\nUse `--json` for safe machine-readable output.\nUse `--debug-json` only for local debugging because it includes raw detected values.\nUse `tiktag -- download` to run anonymization on the literal text `download`."
 )]
 pub struct RunArgs {
     /// Print per-token predictions to stderr (debug aid).
@@ -22,9 +22,13 @@ pub struct RunArgs {
     #[arg(long, default_value_t = false, conflicts_with = "text")]
     pub stdin: bool,
 
-    /// Emit JSON output instead of human-readable lines.
+    /// Emit safe JSON output instead of human-readable lines.
     #[arg(long, default_value_t = false)]
     pub json: bool,
+
+    /// Emit debug JSON with reversible replacement metadata.
+    #[arg(long, default_value_t = false, conflicts_with = "json")]
+    pub debug_json: bool,
 
     /// The text to run NER/PII inference on (omit when using --stdin).
     #[arg(required_unless_present = "stdin")]
@@ -109,5 +113,17 @@ mod tests {
         assert!(args.stdin);
         assert!(args.text.is_none());
         assert!(args.json);
+    }
+
+    #[test]
+    fn parses_debug_json_mode() {
+        let command = parse_from(["tiktag", "--stdin", "--debug-json"]);
+
+        let Command::Run(args) = command else {
+            panic!("expected run command");
+        };
+        assert!(args.stdin);
+        assert!(args.debug_json);
+        assert!(!args.json);
     }
 }

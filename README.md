@@ -9,9 +9,10 @@ CLI for anonymizing text with `bardsai/eu-pii-anonimization-multilang`.
 1. For local source checkouts, download the built-in model with `just download` or `tiktag download`
 2. Build a self-contained artifact with `just package` when distributing or deploying
 3. Run anonymization on literal text or pipe text with `--stdin`
-4. Use `--json` only when you need machine-readable replacement metadata and total timings
+4. Use `--json` for safe machine-readable anonymized output, stats, and provenance
+5. Use `--debug-json` only for local debugging because it includes raw detected values
 
-`run` is the default path. `run-json` and `run-tokens` are helper commands for tooling and debugging.
+`run` is the default path. `run-json`, `run-debug-json`, and `run-tokens` are helper commands for tooling and debugging.
 
 ## Prerequisites
 
@@ -49,16 +50,35 @@ Run from packaged artifact root (`dist/tiktag`):
 
 - `echo "Contact Maria at maria@example.com" | ./dist/tiktag/tiktag --stdin`
 - `echo "Contact Maria at maria@example.com" | ./dist/tiktag/tiktag --stdin --json`
+- `echo "Contact Maria at maria@example.com" | ./dist/tiktag/tiktag --stdin --debug-json`
 
 Run anonymization:
 
 - `just run "Contact Maria at maria@example.com"`
 - `just sample`
 - `cat testdocs/eu_pii_windowed_input.md | cargo run -- --stdin --json`
+- `cat testdocs/eu_pii_windowed_input.md | cargo run -- --stdin --debug-json`
 - `cat testdocs/eu_pii_windowed_input.md | just run-stdin`
 - `cat testdocs/eu_pii_windowed_input.md | just run-json-stdin`
+- `cat testdocs/eu_pii_windowed_input.md | just run-debug-json-stdin`
 
-`run-json` is for machine-readable output. `run-tokens` is for token-level debugging on stderr.
+`run-json` is safe machine-readable output. `run-debug-json` includes reversible metadata for local debugging. `run-tokens` is for token-level debugging on stderr.
+
+## JSON Contract
+
+`--json` is the stable machine-readable boundary. It is safe by default and does not include reversible replacement metadata.
+
+Current fields:
+
+- `schema_version`
+- `provenance.app_version`
+- `provenance.hf_repo`
+- `provenance.bundle_sha256`
+- `profile`
+- `anonymized_text`
+- `stats`
+
+Breaking JSON shape changes require a `schema_version` bump. Additive fields may be introduced within the same schema version.
 
 ## Internal Config
 
