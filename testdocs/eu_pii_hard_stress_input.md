@@ -1,6 +1,6 @@
 # Cross-Border Incident Bundle
 
-This document is a realistic exploratory stress input for harder `eu_pii` families. It is synthetic and intended for manual inspection rather than automated regression.
+This document is a realistic exploratory stress input for harder entity families outside built-in multilingual NER sweet spot. It is synthetic and intended for manual inspection rather than automated regression.
 
 ## Case A
 

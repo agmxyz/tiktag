@@ -43,7 +43,7 @@ run-debug-json-stdin:
     cargo run -- --stdin --debug-json
 
 sample:
-    cargo run -- "Contact Maria Rossi at maria.rossi@example.it or +39 347 123 4567 in Milan."
+    cargo run -- "Maria Garcia from OpenAI visited Berlin on 2024-05-01."
 
 download:
     cargo run -- download
@@ -51,16 +51,16 @@ download:
 package:
     cargo build --release
     test -f models/profiles.toml || (echo "missing models/profiles.toml" >&2; exit 1)
-    test -f models/eu-pii-anonimization-multilang/tokenizer.json || (echo "missing model assets; run 'just download'" >&2; exit 1)
-    test -f models/eu-pii-anonimization-multilang/config.json || (echo "missing model assets; run 'just download'" >&2; exit 1)
-    test -f models/eu-pii-anonimization-multilang/onnx/model_quantized.onnx || (echo "missing model assets; run 'just download'" >&2; exit 1)
+    test -f models/distilbert-base-multilingual-cased-ner-hrl/tokenizer.json || (echo "missing model assets; run 'just download'" >&2; exit 1)
+    test -f models/distilbert-base-multilingual-cased-ner-hrl/config.json || (echo "missing model assets; run 'just download'" >&2; exit 1)
+    test -f models/distilbert-base-multilingual-cased-ner-hrl/onnx/model_quantized.onnx || (echo "missing model assets; run 'just download'" >&2; exit 1)
     rm -rf dist/tiktag
-    mkdir -p dist/tiktag/models/eu-pii-anonimization-multilang/onnx
+    mkdir -p dist/tiktag/models/distilbert-base-multilingual-cased-ner-hrl/onnx
     cp target/release/tiktag dist/tiktag/tiktag
     cp models/profiles.toml dist/tiktag/models/profiles.toml
-    cp models/eu-pii-anonimization-multilang/tokenizer.json dist/tiktag/models/eu-pii-anonimization-multilang/tokenizer.json
-    cp models/eu-pii-anonimization-multilang/config.json dist/tiktag/models/eu-pii-anonimization-multilang/config.json
-    cp models/eu-pii-anonimization-multilang/onnx/model_quantized.onnx dist/tiktag/models/eu-pii-anonimization-multilang/onnx/model_quantized.onnx
+    cp models/distilbert-base-multilingual-cased-ner-hrl/tokenizer.json dist/tiktag/models/distilbert-base-multilingual-cased-ner-hrl/tokenizer.json
+    cp models/distilbert-base-multilingual-cased-ner-hrl/config.json dist/tiktag/models/distilbert-base-multilingual-cased-ner-hrl/config.json
+    cp models/distilbert-base-multilingual-cased-ner-hrl/onnx/model_quantized.onnx dist/tiktag/models/distilbert-base-multilingual-cased-ner-hrl/onnx/model_quantized.onnx
 
 smoke-package:
     just package

@@ -1,6 +1,6 @@
 # tiktag
 
-CLI for anonymizing text with `bardsai/eu-pii-anonimization-multilang`.
+CLI for anonymizing text with `Xenova/distilbert-base-multilingual-cased-ner-hrl`.
 
 `tiktag` is a text-in / text-out anonymization node. It does not parse PDFs or rebuild them. The intended pipeline boundary is: another tool extracts text, `tiktag` anonymizes it, and another tool handles document reconstruction.
 
@@ -54,7 +54,7 @@ Run from packaged artifact root (`dist/tiktag`):
 
 Run anonymization:
 
-- `just run "Contact Maria at maria@example.com"`
+- `just run "Maria Garcia from OpenAI visited Berlin on 2024-05-01."`
 - `just sample`
 - `cat testdocs/eu_pii_windowed_input.md | cargo run -- --stdin --json`
 - `cat testdocs/eu_pii_windowed_input.md | cargo run -- --stdin --debug-json`
@@ -87,7 +87,7 @@ The model settings live in `models/profiles.toml` at a fixed internal path. The 
 The internal config keeps the historical TOML shape:
 
 - `default_profile`
-- `[profiles.eu_pii]`
+- `[profiles.distilbert_ner_hrl]`
 - `hf_repo`
 - `model_dir`
 - `max_tokens`

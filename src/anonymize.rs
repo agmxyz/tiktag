@@ -10,6 +10,7 @@ use crate::decode::EntitySpan;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PlaceholderFamily {
+    Date,
     Person,
     Email,
     Phone,
@@ -35,6 +36,7 @@ pub enum PlaceholderFamily {
 impl PlaceholderFamily {
     fn as_str(self) -> &'static str {
         match self {
+            Self::Date => "DATE",
             Self::Person => "PERSON",
             Self::Email => "EMAIL",
             Self::Phone => "PHONE",
@@ -75,11 +77,12 @@ impl PlaceholderFamily {
             Self::VehicleId => 12,
             Self::Phone => 13,
             Self::Dob => 14,
-            Self::Address => 15,
-            Self::Person => 16,
-            Self::Org => 17,
-            Self::Location => 18,
-            Self::Handle => 19,
+            Self::Date => 15,
+            Self::Address => 16,
+            Self::Person => 17,
+            Self::Org => 18,
+            Self::Location => 19,
+            Self::Handle => 20,
         }
     }
 }
@@ -275,10 +278,10 @@ fn count_replacements_by_family(replacements: &[Replacement]) -> BTreeMap<String
 
 fn map_label_to_family(label: &str) -> Option<PlaceholderFamily> {
     match label {
-        "PERSON_NAME" | "PERSON_ALIAS" | "PROPER_NAME" => Some(PlaceholderFamily::Person),
+        "PER" | "PERSON_NAME" | "PERSON_ALIAS" | "PROPER_NAME" => Some(PlaceholderFamily::Person),
         "EMAIL_ADDRESS" => Some(PlaceholderFamily::Email),
         "PHONE_NUMBER" => Some(PlaceholderFamily::Phone),
-        "ORGANIZATION_NAME" => Some(PlaceholderFamily::Org),
+        "ORG" | "ORGANIZATION_NAME" => Some(PlaceholderFamily::Org),
         "ORGANIZATION_IDENTIFIER" => Some(PlaceholderFamily::OrgId),
         "PERSON_IDENTIFIER" => Some(PlaceholderFamily::PersonId),
         "DOCUMENT_IDENTIFIER" | "DOCUMENT_REFERENCE" => Some(PlaceholderFamily::DocId),
@@ -289,7 +292,8 @@ fn map_label_to_family(label: &str) -> Option<PlaceholderFamily> {
         "IP_ADDRESS" => Some(PlaceholderFamily::Ip),
         "IDENTIFYING_LINK" => Some(PlaceholderFamily::Url),
         "POSTAL_ADDRESS" => Some(PlaceholderFamily::Address),
-        "LOCATION" | "GEO_LOCATION" => Some(PlaceholderFamily::Location),
+        "LOC" | "LOCATION" | "GEO_LOCATION" => Some(PlaceholderFamily::Location),
+        "DATE" => Some(PlaceholderFamily::Date),
         "DATE_OF_BIRTH" => Some(PlaceholderFamily::Dob),
         "AUTH_SECRET" => Some(PlaceholderFamily::Secret),
         "DEVICE_IDENTIFIER" => Some(PlaceholderFamily::DeviceId),
@@ -308,8 +312,6 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
     let alnum_count = text.chars().filter(|ch| ch.is_alphanumeric()).count();
     let digit_count = text.chars().filter(|ch| ch.is_ascii_digit()).count();
     let letter_count = text.chars().filter(|ch| ch.is_alphabetic()).count();
-    let has_uppercase = text.chars().any(|ch| ch.is_uppercase());
-    let has_whitespace = text.chars().any(|ch| ch.is_whitespace());
 
     match family {
         PlaceholderFamily::Email => is_valid_email(text),
@@ -336,21 +338,16 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
                 && !is_common_junk_token(&lower)
         }
         PlaceholderFamily::Location => {
-            letter_count >= 2
-                && digit_count == 0
-                && first_alpha_is_uppercase(text)
-                && !is_common_junk_token(&lower)
+            letter_count >= 2 && digit_count == 0 && !is_common_junk_token(&lower)
         }
-        PlaceholderFamily::Person => {
-            letter_count >= 2 && first_alpha_is_uppercase(text) && !is_common_junk_token(&lower)
-        }
+        PlaceholderFamily::Person => letter_count >= 2 && !is_common_junk_token(&lower),
         PlaceholderFamily::Org => {
-            (has_whitespace || (has_uppercase && !text.contains('.')))
-                && !text.contains('/')
-                && !text.contains('@')
+            !text.contains('@')
+                && !(text.contains('.') && text == lower)
                 && letter_count >= 2
                 && !is_common_junk_token(&lower)
         }
+        PlaceholderFamily::Date => alnum_count >= 3,
         PlaceholderFamily::Dob => alnum_count >= 4 && digit_count >= 1,
         PlaceholderFamily::Secret => alnum_count >= 4,
         PlaceholderFamily::Handle => alnum_count >= 2,
@@ -566,14 +563,8 @@ mod tests {
 
     #[test]
     fn rejects_lowercase_domain_like_org_fragments() {
-        let text = "portal atlas-soluciones.es";
-        let result = anonymize_ok(
-            text,
-            &[
-                span("ORGANIZATION_NAME", 0, 6, "portal"),
-                span("ORGANIZATION_NAME", 7, 26, "atlas-soluciones.es"),
-            ],
-        );
+        let text = "atlas-soluciones.es";
+        let result = anonymize_ok(text, &[span("ORG", 0, 19, "atlas-soluciones.es")]);
 
         assert!(result.replacements.is_empty());
         assert_eq!(result.anonymized_text, text);
@@ -591,5 +582,30 @@ mod tests {
         );
 
         assert!(result.replacements.is_empty());
+    }
+
+    #[test]
+    fn accepts_standard_per_label_without_uppercase() {
+        let text = "maria arrived.";
+        let result = anonymize_ok(text, &[span("PER", 0, 5, "maria")]);
+
+        assert_eq!(result.anonymized_text, "[PERSON_1] arrived.");
+    }
+
+    #[test]
+    fn accepts_standard_loc_label_without_uppercase() {
+        let text = "berlin office";
+        let result = anonymize_ok(text, &[span("LOC", 0, 6, "berlin")]);
+
+        assert_eq!(result.anonymized_text, "[LOCATION_1] office");
+    }
+
+    #[test]
+    fn maps_standard_date_label_to_date_placeholder() {
+        let text = "2024-05-01 deadline";
+        let result = anonymize_ok(text, &[span("DATE", 0, 10, "2024-05-01")]);
+
+        assert_eq!(result.anonymized_text, "[DATE_1] deadline");
+        assert_eq!(result.replacements[0].family, PlaceholderFamily::Date);
     }
 }

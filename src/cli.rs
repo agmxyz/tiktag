@@ -10,7 +10,7 @@ use clap::Parser;
 #[derive(Debug, Clone, Parser)]
 #[command(
     name = "tiktag",
-    about = "eu-pii text anonymization CLI",
+    about = "multilingual ner anonymization CLI",
     after_help = "Download model assets with `tiktag download`.\nUse `--stdin` to read input text from standard input.\nUse `--json` for safe machine-readable output.\nUse `--debug-json` only for local debugging because it includes raw detected values.\nUse `tiktag -- download` to run anonymization on the literal text `download`."
 )]
 pub struct RunArgs {

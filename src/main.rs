@@ -318,9 +318,9 @@ mod tests {
 
     fn resolved_profile() -> ResolvedProfile {
         ResolvedProfile {
-            name: "eu_pii".to_owned(),
-            hf_repo: "bardsai/eu-pii-anonimization-multilang".to_owned(),
-            model_dir: PathBuf::from("models/eu-pii-anonimization-multilang"),
+            name: "distilbert_ner_hrl".to_owned(),
+            hf_repo: "Xenova/distilbert-base-multilingual-cased-ner-hrl".to_owned(),
+            model_dir: PathBuf::from("models/distilbert-base-multilingual-cased-ner-hrl"),
             max_tokens: 512,
             overlap_tokens: 128,
         }
@@ -337,7 +337,7 @@ mod tests {
     fn sample_provenance() -> super::JsonProvenance {
         super::JsonProvenance {
             app_version: "0.1.0".to_owned(),
-            hf_repo: "bardsai/eu-pii-anonimization-multilang".to_owned(),
+            hf_repo: "Xenova/distilbert-base-multilingual-cased-ner-hrl".to_owned(),
             bundle_sha256: "abc123".to_owned(),
         }
     }

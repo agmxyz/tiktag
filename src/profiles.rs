@@ -1,6 +1,6 @@
-// Internal model config loading. The CLI is eu-pii-only, but the repo still keeps
-// its model path and token limits in models/profiles.toml using the historical
-// default_profile + [profiles.<name>] TOML shape.
+// Internal model config loading for built-in multilingual DistilBERT NER model.
+// The repo still keeps its model path and token limits in models/profiles.toml
+// using default_profile + [profiles.<name>] TOML shape.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -9,7 +9,7 @@ use anyhow::{Context, bail};
 use serde::Deserialize;
 
 pub const INTERNAL_PROFILES_PATH: &str = "models/profiles.toml";
-pub const BUILTIN_PROFILE_NAME: &str = "eu_pii";
+pub const BUILTIN_PROFILE_NAME: &str = "distilbert_ner_hrl";
 
 /// The built-in model config after validation and path resolution.
 #[derive(Debug, Clone)]
@@ -90,7 +90,7 @@ impl Profiles {
         let spec = raw
             .profiles
             .get(BUILTIN_PROFILE_NAME)
-            .expect("eu_pii profile must exist after validation");
+            .expect("built-in profile must exist after validation");
 
         if spec.hf_repo.trim().is_empty() {
             bail!("profile '{BUILTIN_PROFILE_NAME}' has empty hf_repo");
@@ -139,11 +139,11 @@ mod tests {
         let profiles = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "eu_pii"
+default_profile = "distilbert_ner_hrl"
 
-[profiles.eu_pii]
-hf_repo = "bardsai/eu-pii-anonimization-multilang"
-model_dir = "eu-pii-anonimization-multilang"
+[profiles.distilbert_ner_hrl]
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128
 "#,
@@ -152,32 +152,38 @@ overlap_tokens = 128
 
         let resolved = profiles.resolve_default();
         assert_eq!(resolved.name, BUILTIN_PROFILE_NAME);
-        assert_eq!(resolved.hf_repo, "bardsai/eu-pii-anonimization-multilang");
+        assert_eq!(
+            resolved.hf_repo,
+            "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+        );
         assert_eq!(
             resolved.model_dir,
-            PathBuf::from("models/eu-pii-anonimization-multilang")
+            PathBuf::from("models/distilbert-base-multilingual-cased-ner-hrl")
         );
         assert_eq!(resolved.max_tokens, 512);
         assert_eq!(resolved.overlap_tokens, 128);
     }
 
     #[test]
-    fn rejects_non_eu_pii_default_profile() {
+    fn rejects_non_builtin_default_profile() {
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
 default_profile = "missing"
 
-[profiles.eu_pii]
-hf_repo = "bardsai/eu-pii-anonimization-multilang"
-model_dir = "eu-pii-anonimization-multilang"
+[profiles.distilbert_ner_hrl]
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128
 "#,
         )
-        .expect_err("non-eu-pii default profile should fail");
+        .expect_err("non-built-in default profile should fail");
 
-        assert!(err.to_string().contains("default_profile must be 'eu_pii'"));
+        assert!(
+            err.to_string()
+                .contains("default_profile must be 'distilbert_ner_hrl'")
+        );
     }
 
     #[test]
@@ -185,11 +191,11 @@ overlap_tokens = 128
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "eu_pii"
+default_profile = "distilbert_ner_hrl"
 
-[profiles.eu_pii]
-hf_repo = "bardsai/eu-pii-anonimization-multilang"
-model_dir = "eu-pii-anonimization-multilang"
+[profiles.distilbert_ner_hrl]
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 0
 overlap_tokens = 0
 "#,
@@ -204,11 +210,11 @@ overlap_tokens = 0
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "eu_pii"
+default_profile = "distilbert_ner_hrl"
 
-[profiles.eu_pii]
-hf_repo = "bardsai/eu-pii-anonimization-multilang"
-model_dir = "eu-pii-anonimization-multilang"
+[profiles.distilbert_ner_hrl]
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128
 
@@ -223,7 +229,7 @@ overlap_tokens = 128
 
         assert!(
             err.to_string()
-                .contains("must contain only [profiles.eu_pii]")
+                .contains("must contain only [profiles.distilbert_ner_hrl]")
         );
     }
 
@@ -232,10 +238,10 @@ overlap_tokens = 128
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "eu_pii"
+default_profile = "distilbert_ner_hrl"
 
-[profiles.eu_pii]
-model_dir = "eu-pii-anonimization-multilang"
+[profiles.distilbert_ner_hrl]
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128
 "#,
@@ -250,11 +256,11 @@ overlap_tokens = 128
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "eu_pii"
+default_profile = "distilbert_ner_hrl"
 
-[profiles.eu_pii]
-hf_repo = "bardsai/eu-pii-anonimization-multilang"
-model_dir = "eu-pii-anonimization-multilang"
+[profiles.distilbert_ner_hrl]
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 510
 "#,

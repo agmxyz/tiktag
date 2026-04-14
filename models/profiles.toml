@@ -1,14 +1,14 @@
-# Internal model config for the built-in eu_pii runtime.
+# Internal model config for the built-in multilingual DistilBERT NER runtime.
 # Paths are relative to this file's directory (`models/`).
 # The bundle contract stays strict:
 # - tokenizer.json
 # - config.json
 # - onnx/model_quantized.onnx
 
-default_profile = "eu_pii"
+default_profile = "distilbert_ner_hrl"
 
-[profiles.eu_pii]
-hf_repo = "bardsai/eu-pii-anonimization-multilang"
-model_dir = "eu-pii-anonimization-multilang"
+[profiles.distilbert_ner_hrl]
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128

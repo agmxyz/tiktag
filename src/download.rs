@@ -96,9 +96,9 @@ mod tests {
             &path,
             format!(
                 r#"
-default_profile = "eu_pii"
+default_profile = "distilbert_ner_hrl"
 
-[profiles.eu_pii]
+[profiles.distilbert_ner_hrl]
 hf_repo = "example/default"
 model_dir = "{model_dir}"
 max_tokens = 512

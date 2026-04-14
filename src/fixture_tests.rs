@@ -106,7 +106,7 @@ fn run_fixture(base_name: &str) -> anyhow::Result<()> {
 
     assert_eq!(
         manifest.profile, BUILTIN_PROFILE_NAME,
-        "fixture '{base_name}' must target the built-in eu_pii profile"
+        "fixture '{base_name}' must target the built-in profile"
     );
 
     let profiles = Profiles::load(&project_path("models/profiles.toml"))?;

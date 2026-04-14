@@ -1,35 +1,23 @@
-profile = "eu_pii"
+profile = "distilbert_ner_hrl"
 min_window_count = 2
 
 [[expected_replacements]]
 placeholder = "[PERSON_1]"
-original = "Laura Gómez Serrano"
-count = 9
-
-[[expected_replacements]]
-placeholder = "[PERSON_2]"
-original = "Javier Ortega Ruiz"
-count = 8
+original = "Satya Nadella"
+count = 80
 
 [[expected_replacements]]
 placeholder = "[ORG_1]"
-original = "Atlas Soluciones S.L."
-count = 9
+original = "Microsoft"
+count = 80
 
 [[expected_replacements]]
-placeholder = "[PHONE_1]"
-original = "+34 612 45 78 90"
-count = 5
-
-[[expected_replacements]]
-placeholder = "[PHONE_2]"
-original = "+34 633 10 44 21"
-count = 5
+placeholder = "[LOCATION_1]"
+original = "London"
+count = 80
 
 forbidden_literals = [
-  "Laura Gómez Serrano",
-  "+34 612 45 78 90",
-  "Atlas Soluciones S.L.",
-  "Javier Ortega Ruiz",
-  "+34 633 10 44 21",
+  "Satya Nadella",
+  "Microsoft",
+  "London",
 ]
