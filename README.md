@@ -2,7 +2,7 @@
 
 CLI for anonymizing text with `Xenova/distilbert-base-multilingual-cased-ner-hrl`.
 
-`tiktag` is a text-in / text-out anonymization node. It does not parse PDFs or rebuild them. The intended pipeline boundary is: another tool extracts text, `tiktag` anonymizes it, and another tool handles document reconstruction.
+`tiktag` is a text-in / text-out anonymization node.
 
 ## Workflow
 

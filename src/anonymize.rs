@@ -244,8 +244,10 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
             letter_count >= 2 && !is_common_junk_token(&lower)
         }
         PlaceholderFamily::Org => {
-            !text.contains('@')
-                && !(text.contains('.') && text == lower)
+            let looks_like_email = text.contains('@');
+            let looks_like_domain = text.contains('.') && text == lower;
+            !looks_like_email
+                && !looks_like_domain
                 && letter_count >= 2
                 && !is_common_junk_token(&lower)
         }
