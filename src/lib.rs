@@ -1,0 +1,77 @@
+mod anonymize;
+mod decode;
+mod model_bundle;
+mod profiles;
+mod runtime;
+mod window;
+
+#[cfg(test)]
+mod fixture_tests;
+
+use std::path::Path;
+
+use anyhow::Context;
+
+pub use anonymize::{AnonymizationResult, PlaceholderFamily, Replacement};
+
+#[derive(Debug)]
+pub struct Tiktag {
+    profile: profiles::ResolvedProfile,
+    runtime: runtime::ModelRuntime,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TiktagOutput {
+    pub anonymization: AnonymizationResult,
+    pub sequence_len: usize,
+    pub window_count: usize,
+}
+
+impl Tiktag {
+    pub fn new(profiles_path: &Path) -> anyhow::Result<Self> {
+        let profiles = profiles::Profiles::load(profiles_path)
+            .with_context(|| format!("failed to load profiles from {}", profiles_path.display()))?;
+        let profile = profiles.resolve_default();
+        let runtime = runtime::ModelRuntime::load(&profile)?;
+
+        Ok(Self { profile, runtime })
+    }
+
+    pub fn anonymize(&mut self, text: &str) -> anyhow::Result<TiktagOutput> {
+        let inference = self.runtime.infer(text)?;
+        let anonymization = anonymize::anonymize(text, &inference.entities)?;
+
+        Ok(TiktagOutput {
+            anonymization,
+            sequence_len: inference.sequence_len,
+            window_count: inference.window_count,
+        })
+    }
+
+    pub fn profile_name(&self) -> &str {
+        &self.profile.name
+    }
+
+    pub fn hf_repo(&self) -> &str {
+        &self.profile.hf_repo
+    }
+
+    pub fn model_dir(&self) -> &Path {
+        &self.profile.model_dir
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Tiktag;
+    use std::path::PathBuf;
+
+    #[test]
+    fn constructor_surfaces_missing_profiles_path() {
+        let err = Tiktag::new(&PathBuf::from("missing/profiles.toml"))
+            .expect_err("missing profiles file should fail");
+
+        assert!(err.to_string().contains("failed to load profiles from"));
+        assert!(err.to_string().contains("missing/profiles.toml"));
+    }
+}

@@ -1,30 +1,22 @@
-mod anonymize;
 mod cli;
-mod decode;
 mod download;
-#[cfg(test)]
-mod fixture_tests;
-mod model_bundle;
-mod profiles;
-mod runtime;
-mod window;
 
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use anyhow::{Context, anyhow};
 use log::info;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-
-use crate::anonymize::{AnonymizationResult, Replacement};
-use crate::model_bundle::REQUIRED_MODEL_FILES;
-use crate::profiles::ResolvedProfile;
-use crate::runtime::{InferenceResult, InferenceTimings, LoadResult, LoadTimings, ModelRuntime};
+use tiktag::{AnonymizationResult, Replacement, Tiktag};
 
 const JSON_SCHEMA_VERSION: u32 = 1;
+const INTERNAL_PROFILES_PATH: &str = "models/profiles.toml";
+const REQUIRED_MODEL_FILES: &[&str] =
+    &["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
 
 /// Structured output for --json mode. Safe by default: no reversible replacement metadata.
 #[derive(Debug, Serialize)]
@@ -48,11 +40,28 @@ struct DebugJsonOutput {
     stats: JsonStats,
 }
 
+#[derive(Debug, Clone)]
+struct CliProfileMetadata {
+    profile: String,
+    hf_repo: String,
+    model_dir: PathBuf,
+}
+
 #[derive(Debug, Serialize)]
 struct JsonProvenance {
     app_version: String,
     hf_repo: String,
     bundle_sha256: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+struct LoadTimings {
+    total_ms: f64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+struct InferenceTimings {
+    total_ms: f64,
 }
 
 #[derive(Debug, Serialize)]
@@ -83,59 +92,59 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn run_inference(args: cli::RunArgs) -> anyhow::Result<()> {
-    let profiles = profiles::Profiles::load_internal()?;
-    let resolved = profiles.resolve_default();
-
-    info!(
-        "selected model='{}' hf_repo='{}' model_dir='{}' max_tokens={} overlap_tokens={}",
-        resolved.name,
-        resolved.hf_repo,
-        resolved.model_dir.display(),
-        resolved.max_tokens,
-        resolved.overlap_tokens,
-    );
-
     let input_text = resolve_input_text(&args)?;
 
-    let LoadResult {
-        mut runtime,
-        timings: load_timings,
-    } = ModelRuntime::load(&resolved)?;
-    let InferenceResult {
-        entities,
-        sequence_len,
-        window_count,
-        timings: infer_timings,
-    } = runtime.infer(&input_text, args.show_tokens)?;
-    let anonymized = crate::anonymize::anonymize(&input_text, &entities)?;
+    let load_start = Instant::now();
+    let mut tiktag = Tiktag::new(Path::new(INTERNAL_PROFILES_PATH))?;
+    let load_timings = LoadTimings {
+        total_ms: finish_timing("load.total", load_start),
+    };
+    let profile = CliProfileMetadata {
+        profile: tiktag.profile_name().to_owned(),
+        hf_repo: tiktag.hf_repo().to_owned(),
+        model_dir: tiktag.model_dir().to_path_buf(),
+    };
+
+    info!(
+        "selected model='{}' hf_repo='{}' model_dir='{}'",
+        profile.profile,
+        profile.hf_repo,
+        profile.model_dir.display(),
+    );
+
+    let infer_start = Instant::now();
+    let output = tiktag.anonymize(&input_text)?;
+    let infer_timings = InferenceTimings {
+        total_ms: finish_timing("infer.total", infer_start),
+    };
 
     if args.debug_json {
         print_debug_json(
-            &resolved,
-            sequence_len,
-            window_count,
+            &profile,
+            output.sequence_len,
+            output.window_count,
             load_timings,
             infer_timings,
-            anonymized,
+            output.anonymization,
         )?;
     } else if args.json {
         print_json(
-            &resolved,
-            sequence_len,
-            window_count,
+            &profile,
+            output.sequence_len,
+            output.window_count,
             load_timings,
             infer_timings,
-            anonymized,
+            output.anonymization,
         )?;
     } else {
-        print_text(&anonymized.anonymized_text);
+        print_text(&output.anonymization.anonymized_text);
     }
 
     Ok(())
 }
 
 fn run_download(_args: cli::DownloadArgs) -> anyhow::Result<()> {
-    crate::download::download()
+    download::download()
 }
 
 fn resolve_input_text(args: &cli::RunArgs) -> anyhow::Result<String> {
@@ -157,17 +166,17 @@ fn print_text(anonymized_text: &str) {
 }
 
 fn print_json(
-    resolved: &ResolvedProfile,
+    profile: &CliProfileMetadata,
     sequence_len: usize,
     window_count: usize,
     load_timings: LoadTimings,
     infer_timings: InferenceTimings,
     anonymized: AnonymizationResult,
 ) -> anyhow::Result<()> {
-    let provenance = build_json_provenance(resolved)?;
+    let provenance = build_json_provenance(profile)?;
     let payload = build_json_output(
         provenance,
-        resolved,
+        profile,
         sequence_len,
         window_count,
         load_timings,
@@ -181,17 +190,17 @@ fn print_json(
 }
 
 fn print_debug_json(
-    resolved: &ResolvedProfile,
+    profile: &CliProfileMetadata,
     sequence_len: usize,
     window_count: usize,
     load_timings: LoadTimings,
     infer_timings: InferenceTimings,
     anonymized: AnonymizationResult,
 ) -> anyhow::Result<()> {
-    let provenance = build_json_provenance(resolved)?;
+    let provenance = build_json_provenance(profile)?;
     let payload = build_debug_json_output(
         provenance,
-        resolved,
+        profile,
         sequence_len,
         window_count,
         load_timings,
@@ -206,7 +215,7 @@ fn print_debug_json(
 
 fn build_json_output(
     provenance: JsonProvenance,
-    resolved: &ResolvedProfile,
+    profile: &CliProfileMetadata,
     sequence_len: usize,
     window_count: usize,
     load_timings: LoadTimings,
@@ -216,7 +225,7 @@ fn build_json_output(
     JsonOutput {
         schema_version: JSON_SCHEMA_VERSION,
         provenance,
-        profile: resolved.name.clone(),
+        profile: profile.profile.clone(),
         anonymized_text: anonymized.anonymized_text,
         stats: JsonStats {
             sequence_len,
@@ -234,7 +243,7 @@ fn build_json_output(
 
 fn build_debug_json_output(
     provenance: JsonProvenance,
-    resolved: &ResolvedProfile,
+    profile: &CliProfileMetadata,
     sequence_len: usize,
     window_count: usize,
     load_timings: LoadTimings,
@@ -244,7 +253,7 @@ fn build_debug_json_output(
     DebugJsonOutput {
         schema_version: JSON_SCHEMA_VERSION,
         provenance,
-        profile: resolved.name.clone(),
+        profile: profile.profile.clone(),
         anonymized_text: anonymized.anonymized_text,
         replacements: anonymized.replacements,
         placeholder_map: anonymized.placeholder_map,
@@ -262,25 +271,25 @@ fn build_debug_json_output(
     }
 }
 
-fn build_json_provenance(resolved: &ResolvedProfile) -> anyhow::Result<JsonProvenance> {
+fn build_json_provenance(profile: &CliProfileMetadata) -> anyhow::Result<JsonProvenance> {
     let mut hasher = Sha256::new();
     hash_bundle_file(
         &mut hasher,
-        crate::profiles::INTERNAL_PROFILES_PATH,
-        Path::new(crate::profiles::INTERNAL_PROFILES_PATH),
+        INTERNAL_PROFILES_PATH,
+        Path::new(INTERNAL_PROFILES_PATH),
     )?;
 
     for relative_path in REQUIRED_MODEL_FILES {
         hash_bundle_file(
             &mut hasher,
             relative_path,
-            &resolved.model_dir.join(relative_path),
+            &profile.model_dir.join(relative_path),
         )?;
     }
 
     Ok(JsonProvenance {
         app_version: env!("CARGO_PKG_VERSION").to_owned(),
-        hf_repo: resolved.hf_repo.clone(),
+        hf_repo: profile.hf_repo.clone(),
         bundle_sha256: format!("{:x}", hasher.finalize()),
     })
 }
@@ -291,6 +300,12 @@ fn hash_bundle_file(hasher: &mut Sha256, label: &str, path: &Path) -> anyhow::Re
     hasher.update([0]);
     hasher.update(bytes);
     Ok(())
+}
+
+fn finish_timing(stage: &str, started_at: Instant) -> f64 {
+    let elapsed_ms = started_at.elapsed().as_secs_f64() * 1_000.0;
+    info!(target: "timing", "{stage}: {elapsed_ms:.2} ms");
+    elapsed_ms
 }
 
 fn init_logging(show_tokens: bool) {
@@ -311,18 +326,15 @@ mod tests {
 
     use serde_json::Value;
 
-    use super::{build_debug_json_output, build_json_output};
-    use crate::anonymize::{AnonymizationResult, PlaceholderFamily, Replacement};
-    use crate::profiles::ResolvedProfile;
-    use crate::runtime::{InferenceTimings, LoadTimings};
+    use super::{CliProfileMetadata, build_debug_json_output, build_json_output};
+    use crate::{InferenceTimings, JsonProvenance, LoadTimings};
+    use tiktag::{AnonymizationResult, PlaceholderFamily, Replacement};
 
-    fn resolved_profile() -> ResolvedProfile {
-        ResolvedProfile {
-            name: "distilbert_ner_hrl".to_owned(),
+    fn profile_metadata() -> CliProfileMetadata {
+        CliProfileMetadata {
+            profile: "distilbert_ner_hrl".to_owned(),
             hf_repo: "Xenova/distilbert-base-multilingual-cased-ner-hrl".to_owned(),
             model_dir: PathBuf::from("models/distilbert-base-multilingual-cased-ner-hrl"),
-            max_tokens: 512,
-            overlap_tokens: 128,
         }
     }
 
@@ -334,8 +346,8 @@ mod tests {
         InferenceTimings { total_ms }
     }
 
-    fn sample_provenance() -> super::JsonProvenance {
-        super::JsonProvenance {
+    fn sample_provenance() -> JsonProvenance {
+        JsonProvenance {
             app_version: "0.1.0".to_owned(),
             hf_repo: "Xenova/distilbert-base-multilingual-cased-ner-hrl".to_owned(),
             bundle_sha256: "abc123".to_owned(),
@@ -375,7 +387,7 @@ mod tests {
     fn json_payload_is_safe_by_default() {
         let payload = build_json_output(
             sample_provenance(),
-            &resolved_profile(),
+            &profile_metadata(),
             27,
             1,
             sample_load_timings(),
@@ -407,7 +419,7 @@ mod tests {
     fn json_payload_includes_counts_and_total_timings() {
         let payload = build_json_output(
             sample_provenance(),
-            &resolved_profile(),
+            &profile_metadata(),
             976,
             3,
             sample_load_timings(),
@@ -433,7 +445,7 @@ mod tests {
     fn debug_json_payload_includes_reversible_metadata() {
         let payload = build_debug_json_output(
             sample_provenance(),
-            &resolved_profile(),
+            &profile_metadata(),
             27,
             1,
             sample_load_timings(),

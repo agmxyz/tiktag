@@ -240,9 +240,7 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
     let digit_count = text.chars().filter(|ch| ch.is_ascii_digit()).count();
 
     match family {
-        PlaceholderFamily::Person => {
-            letter_count >= 2 && !is_common_junk_token(&lower)
-        }
+        PlaceholderFamily::Person => letter_count >= 2 && !is_common_junk_token(&lower),
         PlaceholderFamily::Org => {
             let looks_like_email = text.contains('@');
             let looks_like_domain = text.contains('.') && text == lower;
@@ -285,7 +283,10 @@ mod tests {
     #[test]
     fn reuses_exact_repeated_values() {
         let text = "Satya met Satya again.";
-        let result = anonymize_ok(text, &[span("PER", 0, 5, "Satya"), span("PER", 10, 15, "Satya")]);
+        let result = anonymize_ok(
+            text,
+            &[span("PER", 0, 5, "Satya"), span("PER", 10, 15, "Satya")],
+        );
 
         assert_eq!(result.anonymized_text, "[PERSON_1] met [PERSON_1] again.");
         assert_eq!(
@@ -345,7 +346,10 @@ mod tests {
         let text = "Satya Nadella arrived.";
         let result = anonymize_ok(
             text,
-            &[span("PER", 0, 5, "Satya"), span("PER", 0, 13, "Satya Nadella")],
+            &[
+                span("PER", 0, 5, "Satya"),
+                span("PER", 0, 13, "Satya Nadella"),
+            ],
         );
 
         assert_eq!(result.replacements.len(), 1);
