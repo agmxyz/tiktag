@@ -78,14 +78,19 @@ Keep it short. Replace stale guidance instead of accumulating history.
 
 - `tiktag` is an anonymization node.
 - It receives text input and outputs anonymized text.
+- It ships one Rust crate with a public lib surface plus a thin CLI.
 - It ships a single built-in model: @models/profiles.toml.
 
 ## Node contract
 
 - Canonical input is text passed directly or through `--stdin`.
+- Rust host contract is `Tiktag::new(profiles_path)` + `Tiktag::anonymize(text)`.
+- The lib takes an explicit `profiles.toml` path; no cwd magic inside the lib API.
 - Prefer `--stdin` for large documents and pipeline use.
 - The CLI does not expose model selection or profile overrides.
 - Default stdout is anonymized text only.
-- `--json` is optional machine/debug output with `anonymized_text`, `replacements`, `placeholder_map`, and `stats`.
+- `--json` is safe machine output with `anonymized_text`, `stats`, and provenance.
+- `--debug-json` is debug-only output with reversible `replacements` and `placeholder_map`.
 - Diagnostics and total timing logs go to stderr through logging.
 - Placeholder assignment is stable within one document only; there is no cross-document identity.
+- For embedded apps, create one `Tiktag` instance and reuse it; host owns locking/threading.

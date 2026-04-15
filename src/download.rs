@@ -1,26 +1,83 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::ErrorKind;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, bail};
 use log::info;
+use serde::Deserialize;
 
-use crate::model_bundle::validate_model_bundle;
-use crate::profiles::{Profiles, ResolvedProfile};
+const BUILTIN_PROFILE_NAME: &str = "distilbert_ner_hrl";
+const INTERNAL_PROFILES_PATH: &str = "models/profiles.toml";
+const REQUIRED_MODEL_FILES: &[&str] =
+    &["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
+
+#[derive(Debug, Clone)]
+struct ResolvedProfile {
+    name: String,
+    hf_repo: String,
+    model_dir: PathBuf,
+}
+
+#[derive(Debug, Deserialize)]
+struct ProfilesFileRaw {
+    default_profile: String,
+    profiles: BTreeMap<String, ProfileRaw>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ProfileRaw {
+    hf_repo: String,
+    model_dir: PathBuf,
+}
 
 pub fn download() -> anyhow::Result<()> {
-    download_with_program_from_profiles(
-        Path::new(crate::profiles::INTERNAL_PROFILES_PATH),
-        Path::new("hf"),
-    )
+    download_with_program_from_profiles(Path::new(INTERNAL_PROFILES_PATH), Path::new("hf"))
 }
 
 fn download_with_program_from_profiles(profiles_path: &Path, program: &Path) -> anyhow::Result<()> {
-    let profiles = Profiles::load(profiles_path)
+    let profile = load_resolved_profile(profiles_path)
         .with_context(|| format!("failed to load profiles from {}", profiles_path.display()))?;
-    let resolved = profiles.resolve_default();
-    download_profile_with_program(&resolved, program)
+    download_profile_with_program(&profile, program)
+}
+
+fn load_resolved_profile(path: &Path) -> anyhow::Result<ResolvedProfile> {
+    let raw_text =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    let base_dir = path
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from("."));
+    let raw: ProfilesFileRaw =
+        toml::from_str(&raw_text).with_context(|| format!("failed to parse {}", path.display()))?;
+
+    if raw.default_profile != BUILTIN_PROFILE_NAME {
+        bail!("default_profile must be '{BUILTIN_PROFILE_NAME}'");
+    }
+    if raw.profiles.len() != 1 || !raw.profiles.contains_key(BUILTIN_PROFILE_NAME) {
+        bail!("profiles file must contain only [profiles.{BUILTIN_PROFILE_NAME}]");
+    }
+
+    let profile = raw
+        .profiles
+        .get(BUILTIN_PROFILE_NAME)
+        .expect("built-in profile should exist after validation");
+    if profile.hf_repo.trim().is_empty() {
+        bail!("profile '{BUILTIN_PROFILE_NAME}' has empty hf_repo");
+    }
+
+    let model_dir = if profile.model_dir.is_absolute() {
+        profile.model_dir.clone()
+    } else {
+        base_dir.join(&profile.model_dir)
+    };
+
+    Ok(ResolvedProfile {
+        name: BUILTIN_PROFILE_NAME.to_owned(),
+        hf_repo: profile.hf_repo.clone(),
+        model_dir,
+    })
 }
 
 fn download_profile_with_program(profile: &ResolvedProfile, program: &Path) -> anyhow::Result<()> {
@@ -78,6 +135,24 @@ fn download_profile_with_program(profile: &ResolvedProfile, program: &Path) -> a
 
     validate_model_bundle(&profile.model_dir)?;
     Ok(())
+}
+
+fn validate_model_bundle(model_dir: &Path) -> anyhow::Result<()> {
+    let missing = REQUIRED_MODEL_FILES
+        .iter()
+        .map(|relative_path| model_dir.join(relative_path))
+        .filter(|path| !path.is_file())
+        .map(|path| path.display().to_string())
+        .collect::<Vec<_>>();
+    if missing.is_empty() {
+        return Ok(());
+    }
+
+    bail!(
+        "model dir '{}' is missing required files: {}",
+        model_dir.display(),
+        missing.join(", ")
+    );
 }
 
 #[cfg(test)]

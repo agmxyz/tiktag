@@ -8,7 +8,6 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, bail};
 use serde::Deserialize;
 
-pub const INTERNAL_PROFILES_PATH: &str = "models/profiles.toml";
 pub const BUILTIN_PROFILE_NAME: &str = "distilbert_ner_hrl";
 
 /// The built-in model config after validation and path resolution.
@@ -51,10 +50,6 @@ struct ProfileRaw {
 }
 
 impl Profiles {
-    pub fn load_internal() -> anyhow::Result<Self> {
-        Self::load(Path::new(INTERNAL_PROFILES_PATH))
-    }
-
     pub fn load(path: &Path) -> anyhow::Result<Self> {
         let raw_text = fs::read_to_string(path)
             .with_context(|| format!("failed to read profiles file {}", path.display()))?;

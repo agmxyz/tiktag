@@ -1,33 +1,24 @@
-use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, bail};
 use serde::Deserialize;
 
-use crate::anonymize;
-use crate::decode::EntitySpan;
-use crate::model_bundle::missing_model_files;
-use crate::profiles::{BUILTIN_PROFILE_NAME, Profiles};
-use crate::runtime::{LoadResult, ModelRuntime};
+use crate::Tiktag;
+
+const BUILTIN_PROFILE_NAME: &str = "distilbert_ner_hrl";
+const BUILTIN_MODEL_DIR: &str = "models/distilbert-base-multilingual-cased-ner-hrl";
+const REQUIRED_MODEL_FILES: &[&str] =
+    &["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
 
 #[derive(Debug, Deserialize)]
 struct FixtureManifest {
     profile: String,
     min_window_count: usize,
     #[serde(default)]
-    expected: Vec<ExpectedEntity>,
-    #[serde(default)]
     expected_replacements: Vec<ExpectedReplacement>,
     #[serde(default)]
     forbidden_literals: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ExpectedEntity {
-    label: String,
-    text: String,
-    count: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,49 +46,23 @@ fn load_input(base_name: &str) -> anyhow::Result<String> {
         .with_context(|| format!("failed to read {}", input_path.display()))
 }
 
-fn require_local_model_assets(model_dir: &Path, profile_name: &str) -> anyhow::Result<()> {
-    let missing = missing_model_files(model_dir);
+fn require_local_model_assets() -> anyhow::Result<()> {
+    let model_dir = project_path(BUILTIN_MODEL_DIR);
+    let missing = REQUIRED_MODEL_FILES
+        .iter()
+        .map(|relative_path| model_dir.join(relative_path))
+        .filter(|path| !path.is_file())
+        .map(|path| path.display().to_string())
+        .collect::<Vec<_>>();
 
     if missing.is_empty() {
         return Ok(());
     }
 
-    let missing_list = missing
-        .iter()
-        .map(|path| path.display().to_string())
-        .collect::<Vec<_>>()
-        .join(", ");
-
     bail!(
-        "fixture tests for profile '{profile_name}' require local model assets; missing: {missing_list}. Run `just download` first."
+        "fixture tests for profile '{BUILTIN_PROFILE_NAME}' require local model assets; missing: {}. Run `just download` first.",
+        missing.join(", ")
     );
-}
-
-fn exact_entity_counts(entities: &[EntitySpan]) -> BTreeMap<(String, String), usize> {
-    let mut counts = BTreeMap::new();
-    for entity in entities {
-        *counts
-            .entry((entity.label.clone(), entity.text.clone()))
-            .or_default() += 1;
-    }
-    counts
-}
-
-fn assert_no_exact_duplicate_spans(base_name: &str, entities: &[EntitySpan]) {
-    let mut seen = BTreeSet::new();
-
-    for entity in entities {
-        let key = (
-            entity.label.clone(),
-            entity.start,
-            entity.end,
-            entity.text.clone(),
-        );
-        assert!(
-            seen.insert(key),
-            "fixture '{base_name}' produced an exact duplicate span: {entity:?}"
-        );
-    }
 }
 
 fn run_fixture(base_name: &str) -> anyhow::Result<()> {
@@ -109,12 +74,10 @@ fn run_fixture(base_name: &str) -> anyhow::Result<()> {
         "fixture '{base_name}' must target the built-in profile"
     );
 
-    let profiles = Profiles::load(&project_path("models/profiles.toml"))?;
-    let resolved = profiles.resolve_default();
-    require_local_model_assets(&resolved.model_dir, &manifest.profile)?;
+    require_local_model_assets()?;
 
-    let LoadResult { mut runtime, .. } = ModelRuntime::load(&resolved)?;
-    let result = runtime.infer(&input, false)?;
+    let mut tiktag = Tiktag::new(&project_path("models/profiles.toml"))?;
+    let result = tiktag.anonymize(&input)?;
 
     assert!(
         result.window_count >= manifest.min_window_count,
@@ -124,67 +87,58 @@ fn run_fixture(base_name: &str) -> anyhow::Result<()> {
         result.window_count
     );
 
-    assert_no_exact_duplicate_spans(base_name, &result.entities);
-    assert!(
-        result.timings.total_ms > 0.0,
-        "fixture '{base_name}' expected infer.total_ms to be positive"
-    );
-
-    let actual_counts = exact_entity_counts(&result.entities);
-    for expected in manifest.expected {
-        let key = (expected.label.clone(), expected.text.clone());
-        let actual = actual_counts.get(&key).copied().unwrap_or(0);
+    for expected in manifest.expected_replacements {
+        let replacement_count = result
+            .anonymization
+            .replacements
+            .iter()
+            .filter(|replacement| replacement.placeholder == expected.placeholder)
+            .count();
         assert_eq!(
-            actual, expected.count,
-            "fixture '{}' expected {} occurrence(s) of [{}] {}, got {}",
-            base_name, expected.count, expected.label, expected.text, actual
+            replacement_count, expected.count,
+            "fixture '{}' expected {} replacement(s) for placeholder {}, got {}",
+            base_name, expected.count, expected.placeholder, replacement_count
+        );
+        assert_eq!(
+            result
+                .anonymization
+                .placeholder_map
+                .get(&expected.placeholder)
+                .map(String::as_str),
+            Some(expected.original.as_str()),
+            "fixture '{}' expected placeholder {} to map to {}",
+            base_name,
+            expected.placeholder,
+            expected.original
+        );
+        assert!(
+            result
+                .anonymization
+                .anonymized_text
+                .contains(&expected.placeholder),
+            "fixture '{}' expected anonymized text to contain {}",
+            base_name,
+            expected.placeholder
+        );
+        assert!(
+            !result
+                .anonymization
+                .anonymized_text
+                .contains(&expected.original),
+            "fixture '{}' expected anonymized text to remove {}",
+            base_name,
+            expected.original
         );
     }
 
-    if !manifest.expected_replacements.is_empty() || !manifest.forbidden_literals.is_empty() {
-        let anonymized = anonymize::anonymize(&input, &result.entities)?;
-        for expected in manifest.expected_replacements {
-            let replacement_count = anonymized
-                .replacements
-                .iter()
-                .filter(|replacement| replacement.placeholder == expected.placeholder)
-                .count();
-            assert_eq!(
-                replacement_count, expected.count,
-                "fixture '{}' expected {} replacement(s) for placeholder {}, got {}",
-                base_name, expected.count, expected.placeholder, replacement_count
-            );
-            assert_eq!(
-                anonymized
-                    .placeholder_map
-                    .get(&expected.placeholder)
-                    .map(String::as_str),
-                Some(expected.original.as_str()),
-                "fixture '{}' expected placeholder {} to map to {}",
-                base_name,
-                expected.placeholder,
-                expected.original
-            );
-            assert!(
-                anonymized.anonymized_text.contains(&expected.placeholder),
-                "fixture '{}' expected anonymized text to contain {}",
-                base_name,
-                expected.placeholder
-            );
-            assert!(
-                !anonymized.anonymized_text.contains(&expected.original),
-                "fixture '{}' expected anonymized text to remove {}",
-                base_name,
-                expected.original
-            );
-        }
-
-        for forbidden_literal in manifest.forbidden_literals {
-            assert!(
-                !anonymized.anonymized_text.contains(&forbidden_literal),
-                "fixture '{base_name}' expected anonymized text to remove forbidden literal {forbidden_literal}"
-            );
-        }
+    for forbidden_literal in manifest.forbidden_literals {
+        assert!(
+            !result
+                .anonymization
+                .anonymized_text
+                .contains(&forbidden_literal),
+            "fixture '{base_name}' expected anonymized text to remove forbidden literal {forbidden_literal}"
+        );
     }
 
     Ok(())

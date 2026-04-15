@@ -7,14 +7,12 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
-use std::time::Instant;
 
 use anyhow::{Context, anyhow, bail};
 use log::{debug, info};
 use ndarray::{Array2, Ix3};
 use ort::session::{Session, builder::GraphOptimizationLevel};
 use ort::value::{Outlet, TensorRef};
-use serde::Serialize;
 use serde_json::Value;
 use tokenizers::Tokenizer;
 use tokenizers::utils::truncation::{TruncationDirection, TruncationParams, TruncationStrategy};
@@ -25,27 +23,10 @@ use crate::profiles::ResolvedProfile;
 use crate::window::WindowEntities;
 
 #[derive(Debug)]
-pub struct LoadResult {
-    pub runtime: ModelRuntime,
-    pub timings: LoadTimings,
-}
-
-#[derive(Debug)]
-pub struct InferenceResult {
+pub(crate) struct InferenceResult {
     pub entities: Vec<EntitySpan>,
     pub sequence_len: usize,
     pub window_count: usize,
-    pub timings: InferenceTimings,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-pub struct LoadTimings {
-    pub total_ms: f64,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-pub struct InferenceTimings {
-    pub total_ms: f64,
 }
 
 #[derive(Debug)]
@@ -57,7 +38,7 @@ struct WindowedInferenceResult {
 /// Holds everything needed to run inference: the tokenizer, label map, ONNX session,
 /// and profile settings. Created via ModelRuntime::load().
 #[derive(Debug)]
-pub struct ModelRuntime {
+pub(crate) struct ModelRuntime {
     tokenizer: Tokenizer,
     labels: Vec<String>,
     session: Session,
@@ -70,9 +51,7 @@ pub struct ModelRuntime {
 }
 
 impl ModelRuntime {
-    pub fn load(profile: &ResolvedProfile) -> anyhow::Result<LoadResult> {
-        let total_start = Instant::now();
-
+    pub(crate) fn load(profile: &ResolvedProfile) -> anyhow::Result<Self> {
         validate_model_bundle(&profile.model_dir)?;
 
         let tokenizer_path = profile.model_dir.join("tokenizer.json");
@@ -122,26 +101,21 @@ impl ModelRuntime {
             .iter()
             .any(|input| input.name() == "token_type_ids");
 
-        let total_ms = finish_timing("load.total", total_start);
-
-        Ok(LoadResult {
-            runtime: Self {
-                tokenizer,
-                labels,
-                session,
-                profile_name: profile.name.clone(),
-                max_tokens: profile.max_tokens,
-                overlap_tokens: profile.overlap_tokens,
-                logits_output_name,
-                has_token_type_ids,
-            },
-            timings: LoadTimings { total_ms },
+        Ok(Self {
+            tokenizer,
+            labels,
+            session,
+            profile_name: profile.name.clone(),
+            max_tokens: profile.max_tokens,
+            overlap_tokens: profile.overlap_tokens,
+            logits_output_name,
+            has_token_type_ids,
         })
     }
 
-    pub fn infer(&mut self, text: &str, show_tokens: bool) -> anyhow::Result<InferenceResult> {
-        let total_start = Instant::now();
+    pub(crate) fn infer(&mut self, text: &str) -> anyhow::Result<InferenceResult> {
         info!("running inference on {} input bytes", text.len());
+        let show_tokens = log::log_enabled!(target: "tokens", log::Level::Debug);
 
         // Tokenize without truncation to measure true sequence length.
         let encoding = self
@@ -156,13 +130,10 @@ impl ModelRuntime {
 
         if seq_len <= self.max_tokens {
             let entities = self.infer_single_encoding(text, &encoding, show_tokens)?;
-            let total_ms = finish_timing("infer.total", total_start);
-            let timings = InferenceTimings { total_ms };
             Ok(InferenceResult {
                 entities,
                 sequence_len: seq_len,
                 window_count: 1,
-                timings,
             })
         } else if self.overlap_tokens == 0 {
             ensure_sequence_within_limit(&self.profile_name, seq_len, self.max_tokens)?;
@@ -173,13 +144,10 @@ impl ModelRuntime {
                 self.max_tokens, self.overlap_tokens
             );
             let result = self.infer_windowed(text, show_tokens)?;
-            let total_ms = finish_timing("infer.total", total_start);
-            let timings = InferenceTimings { total_ms };
             Ok(InferenceResult {
                 entities: result.entities,
                 sequence_len: seq_len,
                 window_count: result.window_count,
-                timings,
             })
         }
     }
@@ -494,12 +462,6 @@ fn ensure_sequence_within_limit(
     Ok(())
 }
 
-fn finish_timing(stage: &str, started_at: Instant) -> f64 {
-    let elapsed_ms = started_at.elapsed().as_secs_f64() * 1_000.0;
-    info!(target: "timing", "{stage}: {elapsed_ms:.2} ms");
-    elapsed_ms
-}
-
 fn ort_error<E>(err: ort::Error<E>) -> anyhow::Error {
     anyhow!(err.to_string())
 }
@@ -509,8 +471,8 @@ mod tests {
     use ort::value::{Outlet, Shape, SymbolicDimensions, TensorElementType, ValueType};
 
     use super::{
-        InferenceTimings, LoadTimings, ensure_sequence_within_limit,
-        validate_logits_output_metadata, validate_runtime_logits_shape,
+        ensure_sequence_within_limit, validate_logits_output_metadata,
+        validate_runtime_logits_shape,
     };
 
     fn labels(count: usize) -> Vec<String> {
@@ -594,24 +556,11 @@ mod tests {
 
     #[test]
     fn rejects_runtime_logits_shape_mismatch() {
-        let err = validate_runtime_logits_shape(
-            "distilbert_ner_hrl",
-            "logits",
-            &labels(9),
-            &[1, 32, 8],
-        )
-        .expect_err("runtime mismatch should fail");
+        let err =
+            validate_runtime_logits_shape("distilbert_ner_hrl", "logits", &labels(9), &[1, 32, 8])
+                .expect_err("runtime mismatch should fail");
 
         assert!(err.to_string().contains("produced logits with 8 labels"));
-    }
-
-    #[test]
-    fn timing_structs_only_expose_totals() {
-        let load = LoadTimings { total_ms: 10.0 };
-        let infer = InferenceTimings { total_ms: 16.5 };
-
-        assert_eq!(load.total_ms, 10.0);
-        assert_eq!(infer.total_ms, 16.5);
     }
 
     #[test]

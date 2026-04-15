@@ -1,68 +1,58 @@
 # tiktag
 
-CLI for anonymizing text with `Xenova/distilbert-base-multilingual-cased-ner-hrl`.
+Rust library and CLI for anonymizing text with `Xenova/distilbert-base-multilingual-cased-ner-hrl`.
 
 `tiktag` is a text-in / text-out anonymization node.
 
-## Workflow
+## Rust API
 
-1. For local source checkouts, download the built-in model with `just download` or `tiktag download`
-2. Build a self-contained artifact with `just package` when distributing or deploying
-3. Run anonymization on literal text or pipe text with `--stdin`
-4. Use `--json` for safe machine-readable anonymized output, stats, and provenance
-5. Use `--debug-json` only for local debugging because it includes raw detected values
+Use the library for Tauri, backend services, and other Rust binaries.
 
-`run` is the default path. `run-json`, `run-debug-json`, and `run-tokens` are helper commands for tooling and debugging.
+```rust
+use std::path::Path;
+use tiktag::Tiktag;
 
-## Prerequisites
+let mut tiktag = Tiktag::new(Path::new("models/profiles.toml"))?;
+let result = tiktag.anonymize("Maria Garcia from OpenAI visited Berlin.")?;
 
-For development from source:
+assert_eq!(
+    result.anonymization.anonymized_text,
+    "[PERSON_1] from [ORG_1] visited [LOCATION_1]."
+);
+```
+
+`Tiktag::new` loads the built-in profile and model bundle once.
+`Tiktag::anonymize` is blocking and reuses the loaded runtime.
+Pass an explicit `profiles.toml` path. The library does not resolve model assets from cwd on its own.
+
+## CLI
+
+Use the CLI for shell pipelines and one-shot runs.
+
+- `tiktag "Maria Garcia from OpenAI visited Berlin."`
+- `echo "Contact Maria at maria@example.com" | tiktag --stdin`
+- `echo "Contact Maria at maria@example.com" | tiktag --stdin --json`
+- `echo "Contact Maria at maria@example.com" | tiktag --stdin --debug-json`
+
+`--json` is safe machine-readable output.
+`--debug-json` includes reversible metadata for local debugging.
+`--show-tokens` prints token predictions to stderr.
+
+## Dev
 
 - Rust toolchain
 - `just`
 - `hf` CLI for downloading model assets
-
-For running a packaged artifact:
-
-- no Rust toolchain
-- no `hf` CLI
-
-## Commands
-
-Build and test:
-
+- `just download`
+- `cargo run -- download`
 - `just build`
 - `just test`
 - `just clippy`
 - `just test-fixtures`
-
-Download model assets:
-
-- `just download`
-- `cargo run -- download`
-
-Create and verify a packaged artifact:
-
 - `just package`
 - `just smoke-package`
 
-Run from packaged artifact root (`dist/tiktag`):
-
-- `echo "Contact Maria at maria@example.com" | ./dist/tiktag/tiktag --stdin`
-- `echo "Contact Maria at maria@example.com" | ./dist/tiktag/tiktag --stdin --json`
-- `echo "Contact Maria at maria@example.com" | ./dist/tiktag/tiktag --stdin --debug-json`
-
-Run anonymization:
-
-- `just run "Maria Garcia from OpenAI visited Berlin."`
-- `just sample`
-- `cat testdocs/xenova_ner_windowed_input.md | cargo run -- --stdin --json`
-- `cat testdocs/xenova_ner_windowed_input.md | cargo run -- --stdin --debug-json`
-- `cat testdocs/xenova_ner_windowed_input.md | just run-stdin`
-- `cat testdocs/xenova_ner_windowed_input.md | just run-json-stdin`
-- `cat testdocs/xenova_ner_windowed_input.md | just run-debug-json-stdin`
-
-`run-json` is safe machine-readable output. `run-debug-json` includes reversible metadata for local debugging. `run-tokens` is for token-level debugging on stderr.
+Packaged artifact runs from `dist/tiktag` with no Rust toolchain and no `hf` CLI.
 
 ## JSON Contract
 
@@ -82,9 +72,10 @@ Breaking JSON shape changes require a `schema_version` bump. Additive fields may
 
 ## Internal Config
 
-The model settings live in `models/profiles.toml` at a fixed internal path. The CLI does not expose model selection or profile overrides.
+The built-in profile lives in `models/profiles.toml`.
+Neither the library nor the CLI exposes model selection or profile overrides.
 
-The internal config keeps the historical TOML shape:
+The config keeps the historical TOML shape:
 
 - `default_profile`
 - `[profiles.distilbert_ner_hrl]`
@@ -95,7 +86,7 @@ The internal config keeps the historical TOML shape:
 
 `model_dir` is resolved relative to the config file directory.
 
-Model bundle must contain:
+Required model bundle files:
 
 - `tokenizer.json`
 - `config.json`
