@@ -14,6 +14,7 @@ println!("{}", out.anonymization.anonymized_text);
 ```
 
 Contract:
+
 - `Tiktag::new` loads profile + model once.
 - `Tiktag::anonymize` is blocking, reuses runtime.
 - Pass explicit `profiles.toml` path.
@@ -28,6 +29,7 @@ echo "Contact Maria at maria@example.com" | tiktag --stdin --debug-json
 ```
 
 Flags:
+
 - `--json` safe machine output.
 - `--debug-json` reversible metadata (`replacements`, `placeholder_map`).
 - `--show-tokens` token predictions to stderr.
