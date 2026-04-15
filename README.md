@@ -2,11 +2,7 @@
 
 Rust lib + CLI for text anonymization with built-in `Xenova/distilbert-base-multilingual-cased-ner-hrl`.
 
-Principle: keep integrations and docs concise + pragmatic. No speculative features.
-
-## Library
-
-Use for Tauri/backend/other Rust hosts.
+## Library quickstart
 
 ```rust
 use std::path::Path;
@@ -22,9 +18,7 @@ Contract:
 - `Tiktag::anonymize` is blocking, reuses runtime.
 - Pass explicit `profiles.toml` path.
 
-## CLI
-
-Default output: anonymized text only.
+## CLI quickstart
 
 ```bash
 tiktag "Maria Garcia from OpenAI visited Berlin."
@@ -34,44 +28,25 @@ echo "Contact Maria at maria@example.com" | tiktag --stdin --debug-json
 ```
 
 Flags:
-- `--stdin`: read text from stdin.
-- `--json`: safe machine output.
-- `--debug-json`: includes reversible metadata (`replacements`, `placeholder_map`).
-- `--show-tokens`: token predictions to stderr.
+- `--json` safe machine output.
+- `--debug-json` reversible metadata (`replacements`, `placeholder_map`).
+- `--show-tokens` token predictions to stderr.
 
-## JSON Contract
+## JSON contract
 
-`--json` fields:
-- `schema_version`
-- `provenance` (`app_version`, `hf_repo`, `bundle_sha256`)
-- `profile`
-- `anonymized_text`
-- `stats`
-
-Rules:
-- breaking shape change => bump `schema_version`
-- additive fields allowed within same version
+`--json` stable + safe. Fields: `schema_version`, `provenance`, `profile`, `anonymized_text`, `stats`.
+Breaking shape change => bump `schema_version`.
 
 ## Dev
 
 ```bash
 just download
-just build
 just test
-just clippy
-just test-fixtures
-just package
 just smoke-package
 ```
 
-Packaged artifact in `dist/tiktag` runs without Rust toolchain or `hf` CLI.
+## Built-in profile
 
-## Built-in Profile
-
-- fixed config path: `models/profiles.toml`
-- no model/profile override flags in lib or CLI
-- `model_dir` resolves relative to config directory
-- required files:
-  - `tokenizer.json`
-  - `config.json`
-  - `onnx/model_quantized.onnx`
+Fixed config path: `models/profiles.toml`. No model/profile override flags.
+`model_dir` resolves relative to config directory.
+Required files: `tokenizer.json`, `config.json`, `onnx/model_quantized.onnx`.
