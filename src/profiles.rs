@@ -5,8 +5,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, bail};
 use serde::Deserialize;
+
+use crate::error::TiktagError;
 
 pub const BUILTIN_PROFILE_NAME: &str = "distilbert_ner_hrl";
 
@@ -50,15 +51,25 @@ struct ProfileRaw {
 }
 
 impl Profiles {
-    pub fn load(path: &Path) -> anyhow::Result<Self> {
-        let raw_text = fs::read_to_string(path)
-            .with_context(|| format!("failed to read profiles file {}", path.display()))?;
+    pub fn load(path: &Path) -> Result<Self, TiktagError> {
+        let raw_text = fs::read_to_string(path).map_err(|source| TiktagError::ProfileRead {
+            path: path.to_path_buf(),
+            source,
+        })?;
         let base_dir = path
             .parent()
             .map(Path::to_path_buf)
             .unwrap_or_else(|| PathBuf::from("."));
-        Self::from_raw(&base_dir, &raw_text)
-            .with_context(|| format!("failed to parse TOML {}", path.display()))
+
+        // Parse errors get a dedicated typed variant so callers can distinguish
+        // TOML decoding failures from semantic validation.
+        let raw: ProfilesFileRaw =
+            toml::from_str(&raw_text).map_err(|source| TiktagError::ProfileParse {
+                path: path.to_path_buf(),
+                source,
+            })?;
+
+        Self::validate_raw(&base_dir, raw).map_err(TiktagError::ProfileInvalid)
     }
 
     pub fn resolve_default(&self) -> ResolvedProfile {
@@ -71,15 +82,15 @@ impl Profiles {
         }
     }
 
-    fn from_raw(base_dir: &Path, raw_text: &str) -> anyhow::Result<Self> {
-        let raw: ProfilesFileRaw = toml::from_str(raw_text)?;
-
+    fn validate_raw(base_dir: &Path, raw: ProfilesFileRaw) -> Result<Self, String> {
         if raw.default_profile != BUILTIN_PROFILE_NAME {
-            bail!("default_profile must be '{BUILTIN_PROFILE_NAME}'");
+            return Err(format!("default_profile must be '{BUILTIN_PROFILE_NAME}'"));
         }
 
         if raw.profiles.len() != 1 || !raw.profiles.contains_key(BUILTIN_PROFILE_NAME) {
-            bail!("profiles file must contain only [profiles.{BUILTIN_PROFILE_NAME}]");
+            return Err(format!(
+                "profiles file must contain only [profiles.{BUILTIN_PROFILE_NAME}]"
+            ));
         }
 
         let spec = raw
@@ -88,18 +99,21 @@ impl Profiles {
             .expect("built-in profile must exist after validation");
 
         if spec.hf_repo.trim().is_empty() {
-            bail!("profile '{BUILTIN_PROFILE_NAME}' has empty hf_repo");
+            return Err(format!(
+                "profile '{BUILTIN_PROFILE_NAME}' has empty hf_repo"
+            ));
         }
         if spec.max_tokens == 0 {
-            bail!("profile '{BUILTIN_PROFILE_NAME}' has invalid max_tokens=0");
+            return Err(format!(
+                "profile '{BUILTIN_PROFILE_NAME}' has invalid max_tokens=0"
+            ));
         }
         let content_tokens = spec.max_tokens.saturating_sub(2);
         if spec.overlap_tokens >= content_tokens {
-            bail!(
+            return Err(format!(
                 "profile '{BUILTIN_PROFILE_NAME}' has overlap_tokens={} which must be less than max_tokens - 2 ({})",
-                spec.overlap_tokens,
-                content_tokens
-            );
+                spec.overlap_tokens, content_tokens
+            ));
         }
 
         Ok(Self {
@@ -111,6 +125,12 @@ impl Profiles {
                 overlap_tokens: spec.overlap_tokens,
             },
         })
+    }
+
+    #[cfg(test)]
+    fn from_raw(base_dir: &Path, raw_text: &str) -> anyhow::Result<Self> {
+        let raw: ProfilesFileRaw = toml::from_str(raw_text)?;
+        Self::validate_raw(base_dir, raw).map_err(|msg| anyhow::anyhow!(msg))
     }
 }
 

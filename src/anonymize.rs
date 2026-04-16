@@ -4,6 +4,7 @@ use std::fmt;
 use serde::Serialize;
 
 use crate::decode::EntitySpan;
+use crate::error::TiktagError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -67,7 +68,7 @@ struct ReplacementCandidate {
     score: f32,
 }
 
-pub fn anonymize(text: &str, entities: &[EntitySpan]) -> anyhow::Result<AnonymizationResult> {
+pub fn anonymize(text: &str, entities: &[EntitySpan]) -> Result<AnonymizationResult, TiktagError> {
     let detected_entity_count = entities.len();
     let mut candidates = entities
         .iter()
