@@ -9,13 +9,19 @@ clap = { version = "4.6.0", features = ["derive"] }
 env_logger = "0.11.8"
 log = "0.4.28"
 ndarray = "0.17.2"
-ort = "2.0.0-rc.12"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sha2 = "0.10.9"
 thiserror = "2"
 tokenizers = "0.22.2"
 toml = "0.9.8"
+
+# CoreML execution provider enabled only on macOS; other targets get plain CPU.
+[target.'cfg(target_os = "macos")'.dependencies]
+ort = { version = "2.0.0-rc.12", features = ["coreml"] }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+ort = "2.0.0-rc.12"
 
 [dev-dependencies]
 tempfile = "3.19.1"
