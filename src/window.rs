@@ -111,6 +111,7 @@ mod tests {
             start,
             end,
             text: text.to_owned(),
+            score: 1.0,
         }
     }
 

@@ -17,7 +17,7 @@ use serde_json::Value;
 use tokenizers::Tokenizer;
 use tokenizers::utils::truncation::{TruncationDirection, TruncationParams, TruncationStrategy};
 
-use crate::decode::{EntitySpan, argmax_label_indices, decode_entities};
+use crate::decode::{EntitySpan, argmax_label_indices_with_probs, decode_entities};
 use crate::model_bundle::validate_model_bundle;
 use crate::profiles::ResolvedProfile;
 use crate::window::WindowEntities;
@@ -202,17 +202,18 @@ impl ModelRuntime {
             logits.shape(),
         )?;
 
-        let predictions = argmax_label_indices(logits);
+        let predictions = argmax_label_indices_with_probs(logits);
 
         if show_tokens {
             for (index, token) in encoding.get_tokens().iter().enumerate() {
+                let (label_idx, prob) = predictions.get(index).copied().unwrap_or((0, 0.0));
                 let label = self
                     .labels
-                    .get(predictions.get(index).copied().unwrap_or_default())
+                    .get(label_idx)
                     .map(String::as_str)
                     .unwrap_or("<unknown>");
                 let (start, end) = encoding.get_offsets().get(index).copied().unwrap_or((0, 0));
-                debug!(target: "tokens", "{index:>3}: {token:<20} {label:<32} [{start}..{end}]");
+                debug!(target: "tokens", "{index:>3}: {token:<20} {label:<32} (prob={prob:.2}) [{start}..{end}]");
             }
         }
 

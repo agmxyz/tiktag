@@ -22,7 +22,7 @@ pub struct Tiktag {
     runtime: runtime::ModelRuntime,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TiktagOutput {
     pub anonymization: AnonymizationResult,
     pub sequence_len: usize,

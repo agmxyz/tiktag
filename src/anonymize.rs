@@ -37,16 +37,17 @@ impl fmt::Display for PlaceholderFamily {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Replacement {
     pub start: usize,
     pub end: usize,
     pub family: PlaceholderFamily,
     pub placeholder: String,
     pub original: String,
+    pub score: f32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct AnonymizationResult {
     pub anonymized_text: String,
     pub replacements: Vec<Replacement>,
@@ -63,6 +64,7 @@ struct ReplacementCandidate {
     original: String,
     normalized: String,
     family: PlaceholderFamily,
+    score: f32,
 }
 
 pub fn anonymize(text: &str, entities: &[EntitySpan]) -> anyhow::Result<AnonymizationResult> {
@@ -114,6 +116,7 @@ fn build_candidate(entity: &EntitySpan) -> Option<ReplacementCandidate> {
         original: entity.text.clone(),
         normalized: normalized.to_owned(),
         family,
+        score: entity.score,
     })
 }
 
@@ -186,6 +189,7 @@ fn assign_placeholders(candidates: Vec<ReplacementCandidate>) -> Vec<Replacement
             family: candidate.family,
             placeholder,
             original: candidate.original,
+            score: candidate.score,
         });
     }
 
@@ -268,11 +272,22 @@ mod tests {
     use crate::decode::EntitySpan;
 
     fn span(label: &str, start: usize, end: usize, text: &str) -> EntitySpan {
+        span_with_score(label, start, end, text, 1.0)
+    }
+
+    fn span_with_score(
+        label: &str,
+        start: usize,
+        end: usize,
+        text: &str,
+        score: f32,
+    ) -> EntitySpan {
         EntitySpan {
             label: label.to_owned(),
             start,
             end,
             text: text.to_owned(),
+            score,
         }
     }
 
@@ -380,5 +395,14 @@ mod tests {
 
         assert_eq!(result.anonymized_text, "[LOCATION_1] central");
         assert_eq!(result.replacements[0].family, PlaceholderFamily::Location);
+    }
+
+    #[test]
+    fn entity_score_flows_into_replacement() {
+        let text = "Satya arrived.";
+        let result = anonymize_ok(text, &[span_with_score("PER", 0, 5, "Satya", 0.73)]);
+
+        assert_eq!(result.replacements.len(), 1);
+        assert!((result.replacements[0].score - 0.73).abs() < 1e-6);
     }
 }
