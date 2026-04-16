@@ -6,33 +6,43 @@ use serde::Serialize;
 use tokenizers::Encoding;
 
 /// A detected entity: label (e.g. "PER"), byte offsets into the original text, and the text itself.
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct EntitySpan {
     pub label: String,
     pub start: usize,
     pub end: usize,
     pub text: String,
+    pub score: f32,
 }
 
-/// Pick the highest-scoring label for each token position. Returns label indices.
-pub fn argmax_label_indices(logits: ArrayView3<'_, f32>) -> Vec<usize> {
+/// Pick the highest-scoring label for each token position, returning both the
+/// argmax label index and the softmax probability of that label.
+///
+/// Uses numerically stable softmax (subtract max). Assumes batch=0.
+pub fn argmax_label_indices_with_probs(logits: ArrayView3<'_, f32>) -> Vec<(usize, f32)> {
     let seq_len = logits.shape()[1];
     let label_count = logits.shape()[2];
     let mut predictions = Vec::with_capacity(seq_len);
 
     for token_index in 0..seq_len {
         let mut best_label = 0usize;
-        let mut best_score = f32::NEG_INFINITY;
+        let mut best_logit = f32::NEG_INFINITY;
 
         for label_index in 0..label_count {
             let score = logits[(0, token_index, label_index)];
-            if score > best_score {
-                best_score = score;
+            if score > best_logit {
+                best_logit = score;
                 best_label = label_index;
             }
         }
 
-        predictions.push(best_label);
+        let mut sum_exp = 0.0f32;
+        for label_index in 0..label_count {
+            sum_exp += (logits[(0, token_index, label_index)] - best_logit).exp();
+        }
+        let prob = if sum_exp > 0.0 { 1.0 / sum_exp } else { 0.0 };
+
+        predictions.push((best_label, prob));
     }
 
     predictions
@@ -43,12 +53,15 @@ pub fn argmax_label_indices(logits: ArrayView3<'_, f32>) -> Vec<usize> {
 pub fn decode_entities(
     text: &str,
     encoding: &Encoding,
-    predictions: &[usize],
+    predictions_with_probs: &[(usize, f32)],
     labels: &[String],
 ) -> Vec<EntitySpan> {
     let special_mask = encoding.get_special_tokens_mask();
     let offsets = encoding.get_offsets();
-    let upper = predictions.len().min(offsets.len()).min(special_mask.len());
+    let upper = predictions_with_probs
+        .len()
+        .min(offsets.len())
+        .min(special_mask.len());
 
     let mut entities = Vec::new();
     let mut current: Option<EntitySpan> = None;
@@ -65,10 +78,8 @@ pub fn decode_entities(
             continue;
         }
 
-        let label = labels
-            .get(predictions[index])
-            .map(String::as_str)
-            .unwrap_or("O");
+        let (label_idx, token_prob) = predictions_with_probs[index];
+        let label = labels.get(label_idx).map(String::as_str).unwrap_or("O");
 
         if label == "O" {
             flush_entity(&mut current, &mut entities);
@@ -96,6 +107,7 @@ pub fn decode_entities(
                 start,
                 end,
                 text: text.get(start..end).unwrap_or("").to_owned(),
+                score: token_prob,
             });
             continue;
         }
@@ -108,6 +120,7 @@ pub fn decode_entities(
             if let Some(span_text) = text.get(entity.start..entity.end) {
                 entity.text = span_text.to_owned();
             }
+            entity.score = entity.score.min(token_prob);
         }
     }
 
@@ -187,6 +200,7 @@ mod tests {
             start,
             end,
             text: text.to_owned(),
+            score: 1.0,
         }
     }
 
@@ -194,7 +208,7 @@ mod tests {
     fn merges_bio_prefixed_spans() {
         let text = "John Doe";
         let encoding = test_encoding(&["John", "Doe"], &[(0, 4), (5, 8)]);
-        let predictions = vec![1, 2];
+        let predictions = vec![(1, 1.0), (2, 1.0)];
         let labels = vec!["O", "B-PER", "I-PER"]
             .into_iter()
             .map(str::to_owned)
@@ -209,7 +223,7 @@ mod tests {
     fn merges_zero_gap_subword_fragments() {
         let text = "Microsoft";
         let encoding = test_encoding(&["Micro", "soft"], &[(0, 5), (5, 9)]);
-        let predictions = vec![1, 2];
+        let predictions = vec![(1, 1.0), (2, 1.0)];
         let labels = vec!["O", "B-ORG", "I-ORG"]
             .into_iter()
             .map(str::to_owned)
@@ -224,7 +238,7 @@ mod tests {
     fn merges_org_bio_continuation_with_whitespace() {
         let text = "Open AI";
         let encoding = test_encoding(&["Open", "AI"], &[(0, 4), (5, 7)]);
-        let predictions = vec![1, 2];
+        let predictions = vec![(1, 1.0), (2, 1.0)];
         let labels = vec!["O", "B-ORG", "I-ORG"]
             .into_iter()
             .map(str::to_owned)
@@ -239,7 +253,7 @@ mod tests {
     fn merges_loc_bio_continuation_with_whitespace() {
         let text = "New York";
         let encoding = test_encoding(&["New", "York"], &[(0, 3), (4, 8)]);
-        let predictions = vec![1, 2];
+        let predictions = vec![(1, 1.0), (2, 1.0)];
         let labels = vec!["O", "B-LOC", "I-LOC"]
             .into_iter()
             .map(str::to_owned)
@@ -254,7 +268,7 @@ mod tests {
     fn does_not_merge_incompatible_labels() {
         let text = "John Paris";
         let encoding = test_encoding(&["John", "Paris"], &[(0, 4), (5, 10)]);
-        let predictions = vec![1, 2];
+        let predictions = vec![(1, 1.0), (2, 1.0)];
         let labels = vec!["O", "B-PER", "I-LOC"]
             .into_iter()
             .map(str::to_owned)
@@ -276,7 +290,7 @@ mod tests {
             &[(0, 0), (0, 4), (0, 0)],
             &[1, 0, 1],
         );
-        let predictions = vec![1, 1, 1];
+        let predictions = vec![(1, 1.0), (1, 1.0), (1, 1.0)];
         let labels = vec!["O", "B-PER"]
             .into_iter()
             .map(str::to_owned)
@@ -291,7 +305,7 @@ mod tests {
     fn ignores_bare_labels_without_bio_prefix() {
         let text = "alice";
         let encoding = test_encoding(&["alice"], &[(0, 5)]);
-        let predictions = vec![1];
+        let predictions = vec![(1, 1.0)];
         let labels = vec!["O", "PER"]
             .into_iter()
             .map(str::to_owned)
@@ -300,5 +314,21 @@ mod tests {
         let entities = decode_entities(text, &encoding, &predictions, &labels);
 
         assert!(entities.is_empty());
+    }
+
+    #[test]
+    fn span_score_is_minimum_token_probability() {
+        let text = "John Doe";
+        let encoding = test_encoding(&["John", "Doe"], &[(0, 4), (5, 8)]);
+        let predictions = vec![(1, 0.9), (2, 0.6)];
+        let labels = vec!["O", "B-PER", "I-PER"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
+
+        assert_eq!(entities.len(), 1);
+        assert!((entities[0].score - 0.6).abs() < 1e-6);
     }
 }

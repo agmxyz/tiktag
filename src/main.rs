@@ -362,6 +362,7 @@ mod tests {
                     family: PlaceholderFamily::Person,
                     placeholder: "[PERSON_1]".to_owned(),
                     original: "Maria".to_owned(),
+                    score: 0.95,
                 },
                 Replacement {
                     start: 15,
@@ -369,6 +370,7 @@ mod tests {
                     family: PlaceholderFamily::Org,
                     placeholder: "[ORG_1]".to_owned(),
                     original: "OpenAI".to_owned(),
+                    score: 0.88,
                 },
             ],
             placeholder_map: BTreeMap::from([
@@ -455,5 +457,6 @@ mod tests {
         assert_eq!(json["schema_version"], Value::from(1));
         assert_eq!(json["placeholder_map"]["[PERSON_1]"], Value::from("Maria"));
         assert_eq!(json["replacements"][0]["original"], Value::from("Maria"));
+        assert_eq!(json["replacements"][0]["score"], Value::from(0.95_f32));
     }
 }
