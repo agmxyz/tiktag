@@ -4,12 +4,9 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, bail};
 use serde::Deserialize;
 
-use crate::Tiktag;
+use crate::{BUILTIN_PROFILE_NAME, Tiktag, missing_model_files};
 
-const BUILTIN_PROFILE_NAME: &str = "distilbert_ner_hrl";
 const BUILTIN_MODEL_DIR: &str = "models/distilbert-base-multilingual-cased-ner-hrl";
-const REQUIRED_MODEL_FILES: &[&str] =
-    &["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
 
 #[derive(Debug, Deserialize)]
 struct FixtureManifest {
@@ -48,10 +45,8 @@ fn load_input(base_name: &str) -> anyhow::Result<String> {
 
 fn require_local_model_assets() -> anyhow::Result<()> {
     let model_dir = project_path(BUILTIN_MODEL_DIR);
-    let missing = REQUIRED_MODEL_FILES
+    let missing = missing_model_files(&model_dir)
         .iter()
-        .map(|relative_path| model_dir.join(relative_path))
-        .filter(|path| !path.is_file())
         .map(|path| path.display().to_string())
         .collect::<Vec<_>>();
 

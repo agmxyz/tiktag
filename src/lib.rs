@@ -13,6 +13,8 @@ use std::path::Path;
 use anyhow::Context;
 
 pub use anonymize::{AnonymizationResult, PlaceholderFamily, Replacement};
+pub use model_bundle::{REQUIRED_MODEL_FILES, missing_model_files, validate_model_bundle};
+pub use profiles::{BUILTIN_PROFILE_NAME, Profiles, ResolvedProfile};
 
 #[derive(Debug)]
 pub struct Tiktag {
