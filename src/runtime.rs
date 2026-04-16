@@ -83,8 +83,24 @@ impl ModelRuntime {
 
         ort::init().commit();
 
-        let session = Session::builder()
-            .map_err(ort_error)?
+        let session_builder = Session::builder().map_err(ort_error)?;
+
+        #[cfg(target_os = "macos")]
+        let session_builder = {
+            // Register CoreML EP on macOS; ORT silently falls back to CPU if CoreML can't load.
+            let builder = session_builder
+                .with_execution_providers([ort::ep::CoreML::default().build()])
+                .map_err(ort_error)?;
+            info!("coreml execution provider registered");
+            builder
+        };
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            info!("cpu execution provider (default)");
+        }
+
+        let session = session_builder
             .with_optimization_level(GraphOptimizationLevel::Level3)
             .map_err(ort_error)?
             .commit_from_file(model_path)
