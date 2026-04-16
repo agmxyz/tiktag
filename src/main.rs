@@ -11,12 +11,10 @@ use anyhow::{Context, anyhow};
 use log::info;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use tiktag::{AnonymizationResult, Replacement, Tiktag};
+use tiktag::{AnonymizationResult, REQUIRED_MODEL_FILES, Replacement, Tiktag};
 
 const JSON_SCHEMA_VERSION: u32 = 1;
 const INTERNAL_PROFILES_PATH: &str = "models/profiles.toml";
-const REQUIRED_MODEL_FILES: &[&str] =
-    &["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
 
 /// Structured output for --json mode. Safe by default: no reversible replacement metadata.
 #[derive(Debug, Serialize)]
