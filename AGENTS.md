@@ -114,6 +114,5 @@ let text = &out.anonymization.anonymized_text;
 ## Footguns & known-legacy
 
 - macOS builds register the CoreML EP; other targets run CPU. ORT silently falls back to CPU if CoreML can't load. The CoreML compile is not cached to disk, so **CLI load pays recompile every invocation**; library hosts pay it once per process.
-- `models/profiles.toml` uses a legacy `default_profile` + `[profiles.<name>]` shape that validates down to the single built-in profile. Adding a second profile will fail validation. Flattening to a single `[model]` section is a candidate cleanup.
 - CLI resolves `models/` by cwd (see CLI contract). Exe-relative resolution is a candidate cleanup.
 - Bench harness: `benches/anonymize.rs`, `just bench`. Skips when assets absent.
