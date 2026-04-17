@@ -30,7 +30,7 @@ tiktag download                           # fetch model assets
 
 Flags: `--stdin`, `--json`, `--debug-json`, `--show-tokens`.
 
-The CLI loads `models/profiles.toml` **relative to the current working directory** — run from the install root.
+The CLI resolves `models/profiles.toml` by checking next to the binary first, then the current working directory — run from anywhere once the bundle is next to `tiktag`.
 
 ## JSON
 

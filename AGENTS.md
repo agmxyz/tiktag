@@ -102,7 +102,7 @@ let text = &out.anonymization.anonymized_text;
 - `tiktag --debug-json` emits the reversible map; local/debug use only.
 - `tiktag download` fetches the bundled model.
 - Diagnostics and timings go to stderr via `log`.
-- The CLI loads `models/profiles.toml` **relative to the current working directory**. Run from the install root (or a directory containing `models/`). No model/profile selection flags.
+- The CLI resolves `models/profiles.toml` by looking next to the binary first (`<exe_dir>/models/profiles.toml`), then falling back to cwd. No model/profile selection flags.
 - Prefer `--stdin` for large inputs: avoids shell argv limits and composes with pipelines.
 
 ## JSON output
@@ -115,5 +115,4 @@ let text = &out.anonymization.anonymized_text;
 
 - macOS builds register the CoreML EP; other targets run CPU. ORT silently falls back to CPU if CoreML can't load. The CoreML compile is not cached to disk, so **CLI load pays recompile every invocation**; library hosts pay it once per process.
 - `models/profiles.toml` uses a legacy `default_profile` + `[profiles.<name>]` shape that validates down to the single built-in profile. Adding a second profile will fail validation. Flattening to a single `[model]` section is a candidate cleanup.
-- CLI resolves `models/` by cwd (see CLI contract). Exe-relative resolution is a candidate cleanup.
 - Bench harness: `benches/anonymize.rs`, `just bench`. Skips when assets absent.

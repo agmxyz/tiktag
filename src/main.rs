@@ -14,7 +14,10 @@ use sha2::{Digest, Sha256};
 use tiktag::{AnonymizationResult, REQUIRED_MODEL_FILES, Replacement, Tiktag};
 
 const JSON_SCHEMA_VERSION: u32 = 1;
-const INTERNAL_PROFILES_PATH: &str = "models/profiles.toml";
+/// Logical identifier for the bundled profile file. Used as the bundle-hash
+/// label so provenance hashes stay stable regardless of install location.
+/// The actual filesystem path is resolved at runtime (see `resolve_profiles_path`).
+const INTERNAL_PROFILES_LABEL: &str = "models/profiles.toml";
 
 /// Structured output for --json mode. Safe by default: no reversible replacement metadata.
 #[derive(Debug, Serialize)]
@@ -92,8 +95,9 @@ fn main() -> anyhow::Result<()> {
 fn run_inference(args: cli::RunArgs) -> anyhow::Result<()> {
     let input_text = resolve_input_text(&args)?;
 
+    let profiles_path = resolve_profiles_path()?;
     let load_start = Instant::now();
-    let mut tiktag = Tiktag::new(Path::new(INTERNAL_PROFILES_PATH))?;
+    let mut tiktag = Tiktag::new(&profiles_path)?;
     let load_timings = LoadTimings {
         total_ms: finish_timing("load.total", load_start),
     };
@@ -119,6 +123,7 @@ fn run_inference(args: cli::RunArgs) -> anyhow::Result<()> {
     if args.debug_json {
         print_debug_json(
             &profile,
+            &profiles_path,
             output.sequence_len,
             output.window_count,
             load_timings,
@@ -128,6 +133,7 @@ fn run_inference(args: cli::RunArgs) -> anyhow::Result<()> {
     } else if args.json {
         print_json(
             &profile,
+            &profiles_path,
             output.sequence_len,
             output.window_count,
             load_timings,
@@ -139,6 +145,39 @@ fn run_inference(args: cli::RunArgs) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+/// Resolve the bundled profiles.toml by checking exe-dir, then cwd.
+/// Returns the first existing path, or an error listing both candidates.
+fn resolve_profiles_path() -> anyhow::Result<PathBuf> {
+    let exe_candidate = std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(|dir| dir.join(INTERNAL_PROFILES_LABEL)));
+    let cwd_candidate = PathBuf::from(INTERNAL_PROFILES_LABEL);
+    pick_existing_profile(exe_candidate.as_deref(), &cwd_candidate)
+}
+
+/// Prefer the exe-dir candidate, fall back to cwd. Errors list both paths tried.
+fn pick_existing_profile(
+    exe_candidate: Option<&Path>,
+    cwd_candidate: &Path,
+) -> anyhow::Result<PathBuf> {
+    if let Some(path) = exe_candidate
+        && path.exists()
+    {
+        return Ok(path.to_path_buf());
+    }
+    if cwd_candidate.exists() {
+        return Ok(cwd_candidate.to_path_buf());
+    }
+
+    let exe_display = exe_candidate
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|| "<unknown exe dir>".to_owned());
+    Err(anyhow!(
+        "failed to locate bundle profile file. Tried:\n  - {exe_display}\n  - {}",
+        cwd_candidate.display()
+    ))
 }
 
 fn run_download(_args: cli::DownloadArgs) -> anyhow::Result<()> {
@@ -165,13 +204,14 @@ fn print_text(anonymized_text: &str) {
 
 fn print_json(
     profile: &CliProfileMetadata,
+    profiles_path: &Path,
     sequence_len: usize,
     window_count: usize,
     load_timings: LoadTimings,
     infer_timings: InferenceTimings,
     anonymized: AnonymizationResult,
 ) -> anyhow::Result<()> {
-    let provenance = build_json_provenance(profile)?;
+    let provenance = build_json_provenance(profile, profiles_path)?;
     let payload = build_json_output(
         provenance,
         profile,
@@ -189,13 +229,14 @@ fn print_json(
 
 fn print_debug_json(
     profile: &CliProfileMetadata,
+    profiles_path: &Path,
     sequence_len: usize,
     window_count: usize,
     load_timings: LoadTimings,
     infer_timings: InferenceTimings,
     anonymized: AnonymizationResult,
 ) -> anyhow::Result<()> {
-    let provenance = build_json_provenance(profile)?;
+    let provenance = build_json_provenance(profile, profiles_path)?;
     let payload = build_debug_json_output(
         provenance,
         profile,
@@ -269,13 +310,12 @@ fn build_debug_json_output(
     }
 }
 
-fn build_json_provenance(profile: &CliProfileMetadata) -> anyhow::Result<JsonProvenance> {
+fn build_json_provenance(
+    profile: &CliProfileMetadata,
+    profiles_path: &Path,
+) -> anyhow::Result<JsonProvenance> {
     let mut hasher = Sha256::new();
-    hash_bundle_file(
-        &mut hasher,
-        INTERNAL_PROFILES_PATH,
-        Path::new(INTERNAL_PROFILES_PATH),
-    )?;
+    hash_bundle_file(&mut hasher, INTERNAL_PROFILES_LABEL, profiles_path)?;
 
     for relative_path in REQUIRED_MODEL_FILES {
         hash_bundle_file(
@@ -328,8 +368,10 @@ mod tests {
 
     use serde_json::Value;
 
-    use super::{CliProfileMetadata, build_debug_json_output, build_json_output};
-    use crate::{InferenceTimings, JsonProvenance, LoadTimings};
+    use super::{
+        CliProfileMetadata, build_debug_json_output, build_json_output, pick_existing_profile,
+    };
+    use crate::{INTERNAL_PROFILES_LABEL, InferenceTimings, JsonProvenance, LoadTimings};
     use tiktag::{AnonymizationResult, PlaceholderFamily, Replacement};
 
     fn profile_metadata() -> CliProfileMetadata {
@@ -462,5 +504,41 @@ mod tests {
         assert_eq!(json["placeholder_map"]["[PERSON_1]"], Value::from("Maria"));
         assert_eq!(json["replacements"][0]["original"], Value::from("Maria"));
         assert_eq!(json["replacements"][0]["score"], Value::from(0.95_f32));
+    }
+
+    #[test]
+    fn pick_existing_profile_prefers_exe_dir_over_cwd() {
+        let exe_dir = tempfile::tempdir().expect("exe temp");
+        let cwd_dir = tempfile::tempdir().expect("cwd temp");
+
+        let exe_profile = exe_dir.path().join(INTERNAL_PROFILES_LABEL);
+        std::fs::create_dir_all(exe_profile.parent().unwrap()).unwrap();
+        std::fs::write(&exe_profile, b"exe").unwrap();
+
+        // cwd candidate does NOT exist
+        let cwd_profile = cwd_dir.path().join(INTERNAL_PROFILES_LABEL);
+
+        let resolved = pick_existing_profile(Some(&exe_profile), &cwd_profile).expect("resolve");
+        assert_eq!(resolved, exe_profile);
+    }
+
+    #[test]
+    fn pick_existing_profile_errors_list_both_paths() {
+        let exe_dir = tempfile::tempdir().expect("exe temp");
+        let cwd_dir = tempfile::tempdir().expect("cwd temp");
+        let exe_profile = exe_dir.path().join(INTERNAL_PROFILES_LABEL);
+        let cwd_profile = cwd_dir.path().join(INTERNAL_PROFILES_LABEL);
+
+        let err = pick_existing_profile(Some(&exe_profile), &cwd_profile)
+            .expect_err("should fail when neither exists");
+        let msg = err.to_string();
+        assert!(
+            msg.contains(&exe_profile.display().to_string()),
+            "msg: {msg}"
+        );
+        assert!(
+            msg.contains(&cwd_profile.display().to_string()),
+            "msg: {msg}"
+        );
     }
 }
