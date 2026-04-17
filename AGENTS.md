@@ -92,7 +92,7 @@ let text = &out.anonymization.anonymized_text;
 - `anonymize` takes `&mut self`. Multi-threaded hosts wrap in `Mutex<Tiktag>` or clone their own instance; the lib does no locking.
 - `profiles_path` is explicit. Relative `model_dir` inside the TOML resolves against the profile file's parent — no cwd lookup elsewhere in the lib.
 - `TiktagOutput` carries `anonymization` (text + replacements + stats) plus `sequence_len` and `window_count` for caller-side observability.
-- Errors are `TiktagError` (thiserror). Boundary failures have dedicated variants (`ProfileRead`, `ProfileParse`, `ModelBundleMissing`, …). Inference-path errors currently fall through `Other(anyhow::Error)` — callers that need fine-grained handling should pattern on the boundary variants and treat `Other` as opaque.
+- Errors are `TiktagError` (thiserror). Boundary + inference-path failures have dedicated variants (`ProfileRead`, `ProfileParse`, `ModelBundleMissing`, `SequenceTooLong`, …). `Other(anyhow::Error)` remains as an escape hatch for unexpected failures.
 - Placeholder numbering is stable per call given the entity set returned by inference. No cross-document identity.
 
 ## CLI contract
@@ -114,5 +114,3 @@ let text = &out.anonymization.anonymized_text;
 ## Footguns & known-legacy
 
 - macOS builds register the CoreML EP; other targets run CPU. ORT silently falls back to CPU if CoreML can't load. The CoreML compile is not cached to disk, so **CLI load pays recompile every invocation**; library hosts pay it once per process.
-- `models/profiles.toml` uses a legacy `default_profile` + `[profiles.<name>]` shape that validates down to the single built-in profile. Adding a second profile will fail validation. Flattening to a single `[model]` section is a candidate cleanup.
-- Bench harness: `benches/anonymize.rs`, `just bench`. Skips when assets absent.
