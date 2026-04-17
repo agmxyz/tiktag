@@ -25,4 +25,9 @@ ort = { version = "2.0.0-rc.12", features = ["coreml"] }
 ort = "2.0.0-rc.12"
 
 [dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.19.1"
+
+[[bench]]
+name = "anonymize"
+harness = false
