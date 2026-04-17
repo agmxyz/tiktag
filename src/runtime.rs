@@ -8,7 +8,6 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use anyhow::{Context, anyhow, bail};
 use log::{debug, info};
 use ndarray::{Array2, Ix3};
 use ort::session::{Session, builder::GraphOptimizationLevel};
@@ -18,6 +17,7 @@ use tokenizers::Tokenizer;
 use tokenizers::utils::truncation::{TruncationDirection, TruncationParams, TruncationStrategy};
 
 use crate::decode::{EntitySpan, argmax_label_indices_with_probs, decode_entities};
+use crate::error::TiktagError;
 use crate::model_bundle::validate_model_bundle;
 use crate::profiles::ResolvedProfile;
 use crate::window::WindowEntities;
@@ -51,7 +51,7 @@ pub(crate) struct ModelRuntime {
 }
 
 impl ModelRuntime {
-    pub(crate) fn load(profile: &ResolvedProfile) -> anyhow::Result<Self> {
+    pub(crate) fn load(profile: &ResolvedProfile) -> Result<Self, TiktagError> {
         validate_model_bundle(&profile.model_dir)?;
 
         let tokenizer_path = profile.model_dir.join("tokenizer.json");
@@ -65,18 +65,18 @@ impl ModelRuntime {
         );
 
         let mut tokenizer = Tokenizer::from_file(&tokenizer_path).map_err(|err| {
-            anyhow!(
+            TiktagError::Tokenizer(format!(
                 "failed to load tokenizer at {}: {err}",
                 tokenizer_path.display()
-            )
+            ))
         })?;
         // Disable the tokenizer's built-in truncation so we can enforce max_tokens ourselves
         // with a clear error message instead of silently dropping tokens.
         tokenizer.with_truncation(None).map_err(|err| {
-            anyhow!(
+            TiktagError::Tokenizer(format!(
                 "failed to disable truncation in tokenizer {}: {err}",
                 tokenizer_path.display()
-            )
+            ))
         })?;
 
         let labels = load_labels(&config_path)?;
@@ -104,8 +104,9 @@ impl ModelRuntime {
             .with_optimization_level(GraphOptimizationLevel::Level3)
             .map_err(ort_error)?
             .commit_from_file(model_path)
-            .map_err(ort_error)
-            .context("failed to create ONNX Runtime session")?;
+            .map_err(|err| {
+                TiktagError::OrtRuntime(format!("failed to create ONNX Runtime session: {err}"))
+            })?;
 
         let logits_output_name =
             validate_logits_output_metadata(&profile.name, &labels, session.outputs())?;
@@ -129,7 +130,7 @@ impl ModelRuntime {
         })
     }
 
-    pub(crate) fn infer(&mut self, text: &str) -> anyhow::Result<InferenceResult> {
+    pub(crate) fn infer(&mut self, text: &str) -> Result<InferenceResult, TiktagError> {
         info!("running inference on {} input bytes", text.len());
         let show_tokens = log::log_enabled!(target: "tokens", log::Level::Debug);
 
@@ -137,10 +138,12 @@ impl ModelRuntime {
         let encoding = self
             .tokenizer
             .encode(text, true)
-            .map_err(|err| anyhow!("tokenization failed: {err}"))?;
+            .map_err(|err| TiktagError::Tokenizer(format!("tokenization failed: {err}")))?;
         let seq_len = encoding.len();
         if seq_len == 0 {
-            bail!("tokenizer returned an empty encoding");
+            return Err(TiktagError::Tokenizer(
+                "tokenizer returned an empty encoding".to_owned(),
+            ));
         }
         info!("encoded sequence length: {seq_len}");
 
@@ -175,13 +178,16 @@ impl ModelRuntime {
         text: &str,
         encoding: &tokenizers::Encoding,
         show_tokens: bool,
-    ) -> anyhow::Result<Vec<EntitySpan>> {
+    ) -> Result<Vec<EntitySpan>, TiktagError> {
         let seq_len = encoding.len();
 
         let input_ids = Array2::from_shape_vec(
             (1, seq_len),
             encoding.get_ids().iter().map(|&id| i64::from(id)).collect(),
-        )?;
+        )
+        .map_err(|err| {
+            TiktagError::OrtRuntime(format!("failed to build input_ids tensor: {err}"))
+        })?;
         let attention_mask = Array2::from_shape_vec(
             (1, seq_len),
             encoding
@@ -189,28 +195,37 @@ impl ModelRuntime {
                 .iter()
                 .map(|&mask| i64::from(mask))
                 .collect(),
-        )?;
+        )
+        .map_err(|err| {
+            TiktagError::OrtRuntime(format!("failed to build attention_mask tensor: {err}"))
+        })?;
 
         let outputs = if self.has_token_type_ids {
             let token_type_ids = Array2::<i64>::zeros((1, seq_len));
-            self.session.run(ort::inputs! {
-                "input_ids" => TensorRef::from_array_view(input_ids.view())?,
-                "attention_mask" => TensorRef::from_array_view(attention_mask.view())?,
-                "token_type_ids" => TensorRef::from_array_view(token_type_ids.view())?,
-            })?
+            self.session
+                .run(ort::inputs! {
+                    "input_ids" => TensorRef::from_array_view(input_ids.view()).map_err(ort_error)?,
+                    "attention_mask" => TensorRef::from_array_view(attention_mask.view()).map_err(ort_error)?,
+                    "token_type_ids" => TensorRef::from_array_view(token_type_ids.view()).map_err(ort_error)?,
+                })
+                .map_err(ort_error)?
         } else {
-            self.session.run(ort::inputs! {
-                "input_ids" => TensorRef::from_array_view(input_ids.view())?,
-                "attention_mask" => TensorRef::from_array_view(attention_mask.view())?,
-            })?
+            self.session
+                .run(ort::inputs! {
+                    "input_ids" => TensorRef::from_array_view(input_ids.view()).map_err(ort_error)?,
+                    "attention_mask" => TensorRef::from_array_view(attention_mask.view()).map_err(ort_error)?,
+                })
+                .map_err(ort_error)?
         };
 
-        let logits = outputs[0]
-            .try_extract_array::<f32>()
-            .context("failed to extract logits as f32 tensor")?;
-        let logits = logits
-            .into_dimensionality::<Ix3>()
-            .context("expected logits with shape [batch, seq, labels]")?;
+        let logits = outputs[0].try_extract_array::<f32>().map_err(|err| {
+            TiktagError::OrtRuntime(format!("failed to extract logits as f32 tensor: {err}"))
+        })?;
+        let logits = logits.into_dimensionality::<Ix3>().map_err(|err| {
+            TiktagError::OrtRuntime(format!(
+                "expected logits with shape [batch, seq, labels]: {err}"
+            ))
+        })?;
         validate_runtime_logits_shape(
             &self.profile_name,
             &self.logits_output_name,
@@ -243,7 +258,7 @@ impl ModelRuntime {
         &mut self,
         text: &str,
         show_tokens: bool,
-    ) -> anyhow::Result<WindowedInferenceResult> {
+    ) -> Result<WindowedInferenceResult, TiktagError> {
         let mut windowed_tokenizer = self.tokenizer.clone();
         windowed_tokenizer
             .with_truncation(Some(TruncationParams {
@@ -252,11 +267,13 @@ impl ModelRuntime {
                 strategy: TruncationStrategy::OnlyFirst,
                 direction: TruncationDirection::Right,
             }))
-            .map_err(|err| anyhow!("failed to configure windowed truncation: {err}"))?;
+            .map_err(|err| {
+                TiktagError::Tokenizer(format!("failed to configure windowed truncation: {err}"))
+            })?;
 
-        let mut primary = windowed_tokenizer
-            .encode(text, true)
-            .map_err(|err| anyhow!("windowed tokenization failed: {err}"))?;
+        let mut primary = windowed_tokenizer.encode(text, true).map_err(|err| {
+            TiktagError::Tokenizer(format!("windowed tokenization failed: {err}"))
+        })?;
         let overflow = primary.take_overflowing();
 
         let mut encodings = Vec::with_capacity(1 + overflow.len());
@@ -297,25 +314,27 @@ impl ModelRuntime {
 
 /// Parse config.json's id2label map into a contiguous Vec<String> indexed by label id.
 /// Rejects sparse maps (gaps would create silent decode bugs).
-fn load_labels(config_path: &Path) -> anyhow::Result<Vec<String>> {
-    let config_text = fs::read_to_string(config_path)
-        .with_context(|| format!("failed to read {}", config_path.display()))?;
-    let config: Value = serde_json::from_str(&config_text)
-        .with_context(|| format!("failed to parse {}", config_path.display()))?;
+fn load_labels(config_path: &Path) -> Result<Vec<String>, TiktagError> {
+    let config_text = fs::read_to_string(config_path).map_err(|err| {
+        TiktagError::Config(format!("failed to read {}: {err}", config_path.display()))
+    })?;
+    let config: Value = serde_json::from_str(&config_text).map_err(|err| {
+        TiktagError::Config(format!("failed to parse {}: {err}", config_path.display()))
+    })?;
 
     let id2label = config
         .get("id2label")
         .and_then(Value::as_object)
-        .ok_or_else(|| anyhow!("config.json is missing id2label"))?;
+        .ok_or_else(|| TiktagError::Config("config.json is missing id2label".to_owned()))?;
 
     let mut labels = BTreeMap::new();
     for (key, value) in id2label {
         let index = key
             .parse::<usize>()
-            .with_context(|| format!("invalid label index {key}"))?;
+            .map_err(|err| TiktagError::Config(format!("invalid label index {key}: {err}")))?;
         let label = value
             .as_str()
-            .ok_or_else(|| anyhow!("label {key} is not a string"))?;
+            .ok_or_else(|| TiktagError::Config(format!("label {key} is not a string")))?;
         labels.insert(index, label.to_owned());
     }
 
@@ -323,7 +342,7 @@ fn load_labels(config_path: &Path) -> anyhow::Result<Vec<String>> {
         .keys()
         .next_back()
         .copied()
-        .ok_or_else(|| anyhow!("id2label is empty"))?;
+        .ok_or_else(|| TiktagError::Config("id2label is empty".to_owned()))?;
 
     let mut ordered = vec![String::new(); max_index + 1];
     for (index, label) in labels {
@@ -331,9 +350,9 @@ fn load_labels(config_path: &Path) -> anyhow::Result<Vec<String>> {
     }
 
     if let Some(gap) = ordered.iter().position(|label| label.is_empty()) {
-        bail!(
+        return Err(TiktagError::Config(format!(
             "id2label has a gap at index {gap} — all indices from 0 to {max_index} must be present"
-        );
+        )));
     }
 
     Ok(ordered)
@@ -343,34 +362,34 @@ fn validate_logits_output_metadata(
     profile_name: &str,
     labels: &[String],
     outputs: &[Outlet],
-) -> anyhow::Result<String> {
+) -> Result<String, TiktagError> {
     let output = outputs.first().ok_or_else(|| {
-        anyhow!(
+        TiktagError::Config(format!(
             "profile '{profile_name}' ONNX model has no outputs; expected token-classification logits output"
-        )
+        ))
     })?;
     let output_name = output.name().to_owned();
     let shape = output.dtype().tensor_shape().ok_or_else(|| {
-        anyhow!(
+        TiktagError::Config(format!(
             "profile '{profile_name}' output '{output_name}' is not a tensor; expected token-classification logits [batch, seq, labels]"
-        )
+        ))
     })?;
     let shape = &shape[..];
 
     if shape.len() != 3 {
-        bail!(
+        return Err(TiktagError::Config(format!(
             "profile '{profile_name}' output '{output_name}' has shape {shape:?}; expected rank-3 logits [batch, seq, labels]"
-        );
+        )));
     }
 
     let onnx_label_count = shape[2];
     if onnx_label_count >= 0 && onnx_label_count as usize != labels.len() {
-        bail!(
+        return Err(TiktagError::Config(format!(
             "profile '{profile_name}' label schema mismatch: config.json id2label has {} labels, but ONNX output '{output_name}' declares {} labels in shape {:?}. Ensure config.json and onnx/model_quantized.onnx come from the same model export.",
             labels.len(),
             onnx_label_count,
             shape
-        );
+        )));
     }
 
     Ok(output_name)
@@ -381,21 +400,21 @@ fn validate_runtime_logits_shape(
     output_name: &str,
     labels: &[String],
     shape: &[usize],
-) -> anyhow::Result<()> {
+) -> Result<(), TiktagError> {
     if shape.len() != 3 {
-        bail!(
+        return Err(TiktagError::Config(format!(
             "profile '{profile_name}' output '{output_name}' has shape {shape:?}; expected rank-3 logits [batch, seq, labels]"
-        );
+        )));
     }
 
     let actual_count = shape[2];
     if actual_count != labels.len() {
-        bail!(
+        return Err(TiktagError::Config(format!(
             "profile '{profile_name}' label schema mismatch: config.json id2label has {} labels, but ONNX output '{output_name}' produced logits with {} labels (shape {:?}). Ensure config.json and onnx/model_quantized.onnx come from the same model export.",
             labels.len(),
             actual_count,
             shape
-        );
+        )));
     }
 
     Ok(())
@@ -468,19 +487,20 @@ fn ensure_sequence_within_limit(
     profile_name: &str,
     seq_len: usize,
     max_tokens: usize,
-) -> anyhow::Result<()> {
+) -> Result<(), TiktagError> {
     if seq_len > max_tokens {
-        bail!(
-            "profile '{profile_name}' tokenized to {seq_len} tokens, exceeding max_tokens={max_tokens}. \
-             Set overlap_tokens > 0 in the profile to enable sliding-window inference, or shorten the input."
-        );
+        return Err(TiktagError::SequenceTooLong {
+            profile: profile_name.to_owned(),
+            seq_len,
+            max_tokens,
+        });
     }
 
     Ok(())
 }
 
-fn ort_error<E>(err: ort::Error<E>) -> anyhow::Error {
-    anyhow!(err.to_string())
+fn ort_error<E>(err: ort::Error<E>) -> TiktagError {
+    TiktagError::OrtRuntime(err.to_string())
 }
 
 #[cfg(test)]

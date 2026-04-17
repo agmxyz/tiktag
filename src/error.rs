@@ -42,6 +42,18 @@ pub enum TiktagError {
     #[error("ONNX runtime error: {0}")]
     OrtRuntime(String),
 
+    /// Input tokenized to more tokens than the profile's `max_tokens` and sliding
+    /// window is disabled (`overlap_tokens == 0`).
+    #[error(
+        "profile '{profile}' tokenized to {seq_len} tokens, exceeding max_tokens={max_tokens}. \
+         Set overlap_tokens > 0 in the profile to enable sliding-window inference, or shorten the input."
+    )]
+    SequenceTooLong {
+        profile: String,
+        seq_len: usize,
+        max_tokens: usize,
+    },
+
     /// Generic I/O failure tied to a path.
     #[error("I/O error: {path}: {source}")]
     Io {
