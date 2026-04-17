@@ -74,23 +74,46 @@ Keep only high-signal information:
 
 Keep it short. Replace stale guidance instead of accumulating history.
 
-## Project intent
+## Project
 
-- `tiktag` is an anonymization node.
-- It receives text input and outputs anonymized text.
-- It ships one Rust crate with a public lib surface plus a thin CLI.
-- It ships a single built-in model: @models/profiles.toml.
+`tiktag` is a text anonymizer. One Rust crate ships a library and a thin CLI. Built-in model: `Xenova/distilbert-base-multilingual-cased-ner-hrl` (quantized ONNX). Authoritative contract lives here; `README.md` is a short user-facing summary of the same shape.
 
-## Node contract
+## Library contract
 
-- Canonical input is text passed directly or through `--stdin`.
-- Rust host contract is `Tiktag::new(profiles_path)` + `Tiktag::anonymize(text)`.
-- The lib takes an explicit `profiles.toml` path; no cwd magic inside the lib API.
-- Prefer `--stdin` for large documents and pipeline use.
-- The CLI does not expose model selection or profile overrides.
-- Default stdout is anonymized text only.
-- `--json` is safe machine output with `anonymized_text`, `stats`, and provenance.
-- `--debug-json` is debug-only output with reversible `replacements` and `placeholder_map`.
-- Diagnostics and total timing logs go to stderr through logging.
-- Placeholder assignment is stable within one document only; there is no cross-document identity.
-- For embedded apps, create one `Tiktag` instance and reuse it; host owns locking/threading.
+```rust
+use tiktag::{Tiktag, TiktagError, TiktagOutput};
+
+let mut tiktag = Tiktag::new(&profiles_path)?;   // loads tokenizer + ONNX session (~350 ms)
+let out: TiktagOutput = tiktag.anonymize(text)?; // per-call, ms-to-tens-of-ms
+let text = &out.anonymization.anonymized_text;
+```
+
+- Construct once, call many. `new` loads expensive state (tokenizer, ONNX session, labels); `anonymize` reuses it.
+- `anonymize` takes `&mut self`. Multi-threaded hosts wrap in `Mutex<Tiktag>` or clone their own instance; the lib does no locking.
+- `profiles_path` is explicit. Relative `model_dir` inside the TOML resolves against the profile file's parent — no cwd lookup elsewhere in the lib.
+- `TiktagOutput` carries `anonymization` (text + replacements + stats) plus `sequence_len` and `window_count` for caller-side observability.
+- Errors are `TiktagError` (thiserror). Boundary failures have dedicated variants (`ProfileRead`, `ProfileParse`, `ModelBundleMissing`, …). Inference-path errors currently fall through `Other(anyhow::Error)` — callers that need fine-grained handling should pattern on the boundary variants and treat `Other` as opaque.
+- Placeholder numbering is stable per call given the entity set returned by inference. No cross-document identity.
+
+## CLI contract
+
+- `tiktag "<text>"` or `tiktag --stdin` produces anonymized text on stdout (`println!`, trailing newline).
+- `tiktag --json` emits machine-readable output without reversible metadata.
+- `tiktag --debug-json` emits the reversible map; local/debug use only.
+- `tiktag download` fetches the bundled model.
+- Diagnostics and timings go to stderr via `log`.
+- The CLI loads `models/profiles.toml` **relative to the current working directory**. Run from the install root (or a directory containing `models/`). No model/profile selection flags.
+- Prefer `--stdin` for large inputs: avoids shell argv limits and composes with pipelines.
+
+## JSON output
+
+- Fields: `schema_version`, `provenance`, `profile`, `anonymized_text`, `stats`.
+- `stats.timings` is machine-dependent — content-hash pipelines must ignore it.
+- Additive field changes keep `schema_version`. Removing, renaming, or retyping a field bumps it.
+
+## Footguns & known-legacy
+
+- macOS builds register the CoreML EP; other targets run CPU. ORT silently falls back to CPU if CoreML can't load. The CoreML compile is not cached to disk, so **CLI load pays recompile every invocation**; library hosts pay it once per process.
+- `models/profiles.toml` uses a legacy `default_profile` + `[profiles.<name>]` shape that validates down to the single built-in profile. Adding a second profile will fail validation. Flattening to a single `[model]` section is a candidate cleanup.
+- CLI resolves `models/` by cwd (see CLI contract). Exe-relative resolution is a candidate cleanup.
+- Bench harness: `benches/anonymize.rs`, `just bench`. Skips when assets absent.

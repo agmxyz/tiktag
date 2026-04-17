@@ -1,3 +1,14 @@
+// Public library surface.
+//
+// Lifecycle: `Tiktag::new` loads profile + tokenizer + ONNX session once (hundreds
+// of ms); `Tiktag::anonymize` reuses that state per call (ms-to-tens-of-ms).
+// Hosts that serve many documents should construct one `Tiktag` and reuse it;
+// locking and threading are the host's responsibility.
+//
+// Pipeline per call (see module docs for details):
+//   runtime::infer  → tokenize, optional sliding window, ONNX forward, decode entities
+//   anonymize::anonymize → filter/merge entities into stable placeholders, rewrite text
+
 mod anonymize;
 mod decode;
 mod error;

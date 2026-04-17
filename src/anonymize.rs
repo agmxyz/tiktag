@@ -1,3 +1,18 @@
+// Entity → placeholder rewriting.
+//
+// Pipeline:
+//   1. build_candidate:  map NER label → PlaceholderFamily (PER/ORG/LOC), drop
+//                        junk/domains/emails that slip past the model.
+//   2. resolve_overlaps: overlapping spans collapse to one winner per cluster;
+//                        tie-break by family priority (PER < ORG < LOC), then
+//                        longer span, then earlier start.
+//   3. assign_placeholders: per-family counter; identical normalized text reuses
+//                           the same placeholder → stable within one document,
+//                           no cross-document identity.
+//   4. rewrite_text:     single forward pass, replacements arrive pre-sorted.
+//
+// DATE is intentionally unsupported on this model (unstable detection).
+
 use std::collections::BTreeMap;
 use std::fmt;
 
@@ -23,6 +38,9 @@ impl PlaceholderFamily {
         }
     }
 
+    /// Lower rank wins overlap ties: PER beats ORG beats LOC. Matches the
+    /// common case where a person name (e.g. "Maria Garcia") overlaps an ORG
+    /// label ("Garcia Consulting") — we prefer the person.
     fn priority_rank(self) -> u8 {
         match self {
             Self::Person => 0,
@@ -165,6 +183,9 @@ fn resolve_overlaps(candidates: Vec<ReplacementCandidate>) -> Vec<ReplacementCan
     accepted
 }
 
+/// Assign `[FAMILY_N]` placeholders. Counter is per-family; same normalized
+/// text in the same family reuses its placeholder so repeated mentions stay
+/// linked within the document.
 fn assign_placeholders(candidates: Vec<ReplacementCandidate>) -> Vec<Replacement> {
     let mut next_indices = BTreeMap::<PlaceholderFamily, usize>::new();
     let mut seen = BTreeMap::<(PlaceholderFamily, String), String>::new();
@@ -235,6 +256,9 @@ fn map_label_to_family(label: &str) -> Option<PlaceholderFamily> {
     }
 }
 
+/// Guard against common false positives from the NER model: bare punctuation,
+/// email addresses, lowercase domain-like tokens, and a small junk dictionary.
+/// Cheaper and more predictable than retraining the model.
 fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
     if !text.chars().any(|ch| ch.is_alphanumeric()) {
         return false;

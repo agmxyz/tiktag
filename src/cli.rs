@@ -49,6 +49,10 @@ pub fn parse() -> Command {
     parse_from(std::env::args_os())
 }
 
+/// Custom dispatch so `download` acts as a subcommand while `tiktag "<text>"`
+/// stays the default path. Clap's own subcommands would force users to type
+/// `tiktag run "<text>"`. Escape with `tiktag -- download` to anonymize the
+/// literal word "download".
 fn parse_from<I, T>(args: I) -> Command
 where
     I: IntoIterator<Item = T>,
