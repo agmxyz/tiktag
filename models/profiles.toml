@@ -5,9 +5,6 @@
 # - config.json
 # - onnx/model_quantized.onnx
 
-default_profile = "distilbert_ner_hrl"
-
-[profiles.distilbert_ner_hrl]
 hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
 model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512

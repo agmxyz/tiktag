@@ -1,6 +1,6 @@
 // Internal model config loading for built-in multilingual DistilBERT NER model.
-// The repo still keeps its model path and token limits in models/profiles.toml
-// using default_profile + [profiles.<name>] TOML shape.
+// The repo keeps its model path and token limits in models/profiles.toml
+// as a flat single-model TOML (no selector, no nested map).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -37,13 +37,8 @@ struct ProfileSpec {
 }
 
 #[derive(Debug, Deserialize)]
-struct ProfilesFileRaw {
-    default_profile: String,
-    profiles: std::collections::BTreeMap<String, ProfileRaw>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ProfileRaw {
+#[serde(deny_unknown_fields)]
+struct ProfileFileRaw {
     hf_repo: String,
     model_dir: PathBuf,
     max_tokens: usize,
@@ -63,7 +58,7 @@ impl Profiles {
 
         // Parse errors get a dedicated typed variant so callers can distinguish
         // TOML decoding failures from semantic validation.
-        let raw: ProfilesFileRaw =
+        let raw: ProfileFileRaw =
             toml::from_str(&raw_text).map_err(|source| TiktagError::ProfileParse {
                 path: path.to_path_buf(),
                 source,
@@ -82,56 +77,41 @@ impl Profiles {
         }
     }
 
-    fn validate_raw(base_dir: &Path, raw: ProfilesFileRaw) -> Result<Self, String> {
-        if raw.default_profile != BUILTIN_PROFILE_NAME {
-            return Err(format!("default_profile must be '{BUILTIN_PROFILE_NAME}'"));
-        }
-
-        if raw.profiles.len() != 1 || !raw.profiles.contains_key(BUILTIN_PROFILE_NAME) {
-            return Err(format!(
-                "profiles file must contain only [profiles.{BUILTIN_PROFILE_NAME}]"
-            ));
-        }
-
-        let spec = raw
-            .profiles
-            .get(BUILTIN_PROFILE_NAME)
-            .expect("built-in profile must exist after validation");
-
-        if spec.hf_repo.trim().is_empty() {
+    fn validate_raw(base_dir: &Path, raw: ProfileFileRaw) -> Result<Self, String> {
+        if raw.hf_repo.trim().is_empty() {
             return Err(format!(
                 "profile '{BUILTIN_PROFILE_NAME}' has empty hf_repo"
             ));
         }
-        if spec.max_tokens == 0 {
+        if raw.max_tokens == 0 {
             return Err(format!(
                 "profile '{BUILTIN_PROFILE_NAME}' has invalid max_tokens=0"
             ));
         }
         // Reserve 2 tokens for [CLS] and [SEP]; overlap must fit inside the
         // remaining content budget or sliding-window stride makes no progress.
-        let content_tokens = spec.max_tokens.saturating_sub(2);
-        if spec.overlap_tokens >= content_tokens {
+        let content_tokens = raw.max_tokens.saturating_sub(2);
+        if raw.overlap_tokens >= content_tokens {
             return Err(format!(
                 "profile '{BUILTIN_PROFILE_NAME}' has overlap_tokens={} which must be less than max_tokens - 2 ({})",
-                spec.overlap_tokens, content_tokens
+                raw.overlap_tokens, content_tokens
             ));
         }
 
         Ok(Self {
             base_dir: base_dir.to_path_buf(),
             profile: ProfileSpec {
-                hf_repo: spec.hf_repo.clone(),
-                model_dir: spec.model_dir.clone(),
-                max_tokens: spec.max_tokens,
-                overlap_tokens: spec.overlap_tokens,
+                hf_repo: raw.hf_repo,
+                model_dir: raw.model_dir,
+                max_tokens: raw.max_tokens,
+                overlap_tokens: raw.overlap_tokens,
             },
         })
     }
 
     #[cfg(test)]
     fn from_raw(base_dir: &Path, raw_text: &str) -> anyhow::Result<Self> {
-        let raw: ProfilesFileRaw = toml::from_str(raw_text)?;
+        let raw: ProfileFileRaw = toml::from_str(raw_text)?;
         Self::validate_raw(base_dir, raw).map_err(|msg| anyhow::anyhow!(msg))
     }
 }
@@ -156,9 +136,6 @@ mod tests {
         let profiles = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "distilbert_ner_hrl"
-
-[profiles.distilbert_ner_hrl]
 hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
 model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
@@ -182,35 +159,10 @@ overlap_tokens = 128
     }
 
     #[test]
-    fn rejects_non_builtin_default_profile() {
-        let err = Profiles::from_raw(
-            &PathBuf::from("models"),
-            r#"
-default_profile = "missing"
-
-[profiles.distilbert_ner_hrl]
-hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
-model_dir = "distilbert-base-multilingual-cased-ner-hrl"
-max_tokens = 512
-overlap_tokens = 128
-"#,
-        )
-        .expect_err("non-built-in default profile should fail");
-
-        assert!(
-            err.to_string()
-                .contains("default_profile must be 'distilbert_ner_hrl'")
-        );
-    }
-
-    #[test]
     fn rejects_zero_max_tokens() {
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "distilbert_ner_hrl"
-
-[profiles.distilbert_ner_hrl]
 hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
 model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 0
@@ -223,31 +175,20 @@ overlap_tokens = 0
     }
 
     #[test]
-    fn rejects_additional_profiles() {
+    fn rejects_unknown_fields() {
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "distilbert_ner_hrl"
-
-[profiles.distilbert_ner_hrl]
 hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
 model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128
-
-[profiles.secondary]
-hf_repo = "example/secondary"
-model_dir = "secondary-model"
-max_tokens = 512
-overlap_tokens = 128
+extra_key = "nope"
 "#,
         )
-        .expect_err("extra profiles should fail");
+        .expect_err("unknown fields should fail");
 
-        assert!(
-            err.to_string()
-                .contains("must contain only [profiles.distilbert_ner_hrl]")
-        );
+        assert!(err.to_string().contains("unknown field"));
     }
 
     #[test]
@@ -255,9 +196,6 @@ overlap_tokens = 128
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "distilbert_ner_hrl"
-
-[profiles.distilbert_ner_hrl]
 model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128
@@ -273,9 +211,6 @@ overlap_tokens = 128
         let err = Profiles::from_raw(
             &PathBuf::from("models"),
             r#"
-default_profile = "distilbert_ner_hrl"
-
-[profiles.distilbert_ner_hrl]
 hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
 model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
