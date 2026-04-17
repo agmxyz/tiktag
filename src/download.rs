@@ -1,3 +1,10 @@
+// CLI `download` subcommand. Fetches the built-in model bundle via hf-hub.
+//
+// hf-hub caches under ~/.cache/huggingface; we then `fs::copy` each required
+// file into the profile's model_dir so the provenance hash (see main.rs
+// build_json_provenance) reads from a stable in-tree location instead of the
+// cache. Re-running `download` is cheap: hf-hub skips unchanged files.
+
 use std::fs;
 use std::path::Path;
 

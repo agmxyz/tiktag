@@ -18,6 +18,9 @@ test:
 test-fixtures:
     cargo test fixture_regression -- --ignored --nocapture
 
+bench:
+    cargo bench
+
 fmt:
     cargo fmt
 

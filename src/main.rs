@@ -292,6 +292,10 @@ fn build_json_provenance(profile: &CliProfileMetadata) -> anyhow::Result<JsonPro
     })
 }
 
+/// Feed `label\0bytes` into the bundle hash. The NUL-delimited label pins each
+/// file to its identity so swapping two files can't produce the same digest,
+/// and so appending a file changes the hash even if raw bytes concatenate the
+/// same way.
 fn hash_bundle_file(hasher: &mut Sha256, label: &str, path: &Path) -> anyhow::Result<()> {
     let bytes = fs::read(path).with_context(|| format!("failed to read {}", path.display()))?;
     hasher.update(label.as_bytes());

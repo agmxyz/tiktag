@@ -108,6 +108,8 @@ impl Profiles {
                 "profile '{BUILTIN_PROFILE_NAME}' has invalid max_tokens=0"
             ));
         }
+        // Reserve 2 tokens for [CLS] and [SEP]; overlap must fit inside the
+        // remaining content budget or sliding-window stride makes no progress.
         let content_tokens = spec.max_tokens.saturating_sub(2);
         if spec.overlap_tokens >= content_tokens {
             return Err(format!(

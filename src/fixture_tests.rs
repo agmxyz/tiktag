@@ -1,3 +1,9 @@
+// End-to-end regression fixtures. Each fixture pairs an input markdown file
+// with a TOML manifest listing expected placeholders, min window count, and
+// forbidden literals. Tests are `#[ignore]` by default because they need the
+// real ~500MB model bundle on disk; run `just test-fixtures` after a
+// `just download`.
+
 use std::fs;
 use std::path::{Path, PathBuf};
 
