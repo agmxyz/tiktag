@@ -81,13 +81,15 @@ impl ModelRuntime {
 
         let labels = load_labels(&config_path)?;
 
+        // Initialize ORT once per process. On macOS, CoreML compile cache is
+        // not persisted to disk, so short-lived CLI runs re-pay compile cost.
         ort::init().commit();
 
         let session_builder = Session::builder().map_err(ort_error)?;
 
         #[cfg(target_os = "macos")]
         let session_builder = {
-            // Register CoreML EP on macOS; ORT silently falls back to CPU if CoreML can't load.
+            // Register CoreML EP on macOS; ORT may silently fall back to CPU.
             let builder = session_builder
                 .with_execution_providers([ort::ep::CoreML::default().build()])
                 .map_err(ort_error)?;

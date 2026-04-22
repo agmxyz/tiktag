@@ -2,6 +2,26 @@
 
 Rust library + CLI for text anonymization. Ships a built-in multilingual NER model (`Xenova/distilbert-base-multilingual-cased-ner-hrl`, quantized ONNX).
 
+## Install
+
+```bash
+cargo install tiktag
+```
+
+Or build from source:
+
+```bash
+cargo install --path .
+```
+
+## Quickstart
+
+```bash
+tiktag download
+tiktag "Maria Garcia from OpenAI visited Berlin."
+echo "Contact maria@example.com" | tiktag --stdin --json
+```
+
 ## Library
 
 ```rust
@@ -23,9 +43,9 @@ println!("{}", out.anonymization.anonymized_text);
 ```bash
 tiktag "Maria Garcia from OpenAI visited Berlin."
 echo "Contact maria@example.com" | tiktag --stdin
-tiktag --stdin --json        < file.txt
-tiktag --stdin --debug-json  < file.txt   # reversible map; debug only
-tiktag download                           # fetch model assets
+tiktag --stdin --json < file.txt
+tiktag --stdin --debug-json < file.txt  # reversible map; debug only
+tiktag download                         # fetch model assets
 ```
 
 Flags: `--stdin`, `--json`, `--debug-json`, `--show-tokens`.
@@ -52,5 +72,14 @@ just smoke-package    # release build + dist smoke
 
 Fixed config path: `models/profiles.toml`. `model_dir` resolves relative to the config directory.
 Required files under `model_dir`: `tokenizer.json`, `config.json`, `onnx/model_quantized.onnx`.
+
+## Caveat
+
+Model-based anonymization can miss entities. Use `tiktag` as an assistive control, not your only compliance/safety gate.
+
+## Model attribution
+
+- Model source: [`Xenova/distilbert-base-multilingual-cased-ner-hrl`](https://huggingface.co/Xenova/distilbert-base-multilingual-cased-ner-hrl)
+- Model license/terms: see model card on Hugging Face.
 
 See `AGENTS.md` for the authoritative contract and known footguns.
