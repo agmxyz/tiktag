@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2] - 2026-04-23
+
+### Fixed
+- `tiktag download` now bootstraps missing profile file for fresh installs.
+- Installed binary now stores and resolves model profile/assets from OS app-data path, so runs work from arbitrary working directories.
+
 ## [0.1.1] - 2026-04-23
 
 ### Added
