@@ -4,6 +4,8 @@
 // of ms); `Tiktag::anonymize` reuses that state per call (ms-to-tens-of-ms).
 // Hosts that serve many documents should construct one `Tiktag` and reuse it;
 // locking and threading are the host's responsibility.
+// macOS/CoreML footgun: compile cache is process-local, so CLI invocations pay
+// compile repeatedly while long-lived library hosts amortize cost.
 //
 // Pipeline per call (see module docs for details):
 //   runtime::infer  → tokenize, optional sliding window, ONNX forward, decode entities

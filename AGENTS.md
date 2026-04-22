@@ -63,20 +63,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Living document policy
 
-This file is shared project memory for future sessions.
-
-Keep only high-signal information:
-
-- current product contract and invariants
-- model-specific behavior that changes implementation decisions
-- proven defaults and operational shortcuts
-- recurring footguns worth preventing
-
-Keep it short. Replace stale guidance instead of accumulating history.
+Keep only contract + invariants + real footguns. Replace stale text; no history log.
 
 ## Project
 
-`tiktag` is a text anonymizer. One Rust crate ships a library and a thin CLI. Built-in model: `Xenova/distilbert-base-multilingual-cased-ner-hrl` (quantized ONNX). Authoritative contract lives here; `README.md` is a short user-facing summary of the same shape.
+`tiktag` = text anonymizer.
+- One Rust crate: library + thin CLI.
+- Built-in model: `Xenova/distilbert-base-multilingual-cased-ner-hrl` (quantized ONNX).
+- `AGENTS.md` = authoritative implementation contract. `README.md` = user summary.
 
 ## Library contract
 
@@ -88,12 +82,12 @@ let out: TiktagOutput = tiktag.anonymize(text)?; // per-call, ms-to-tens-of-ms
 let text = &out.anonymization.anonymized_text;
 ```
 
-- Construct once, call many. `new` loads expensive state (tokenizer, ONNX session, labels); `anonymize` reuses it.
-- `anonymize` takes `&mut self`. Multi-threaded hosts wrap in `Mutex<Tiktag>` or clone their own instance; the lib does no locking.
-- `profiles_path` is explicit. Relative `model_dir` inside the TOML resolves against the profile file's parent — no cwd lookup elsewhere in the lib.
-- `TiktagOutput` carries `anonymization` (text + replacements + stats) plus `sequence_len` and `window_count` for caller-side observability.
-- Errors are `TiktagError` (thiserror). Boundary + inference-path failures have dedicated variants (`ProfileRead`, `ProfileParse`, `ModelBundleMissing`, `SequenceTooLong`, …). `Other(anyhow::Error)` remains as an escape hatch for unexpected failures.
-- Placeholder numbering is stable per call given the entity set returned by inference. No cross-document identity.
+- Construct once, call many: `new` expensive; `anonymize` reuses runtime.
+- `anonymize` takes `&mut self`. No internal locking. Multi-thread hosts use `Mutex<Tiktag>` or per-thread instance.
+- `profiles_path` explicit. Relative `model_dir` resolves against profile file parent only.
+- `TiktagOutput`: `anonymization` + `sequence_len` + `window_count`.
+- Errors are `TiktagError` (`thiserror`). Keep typed variants for boundary/inference/profile failures. `Other(anyhow::Error)` is escape hatch.
+- Placeholder numbering stable per call only. No cross-document identity.
 
 ## CLI contract
 
@@ -101,7 +95,7 @@ let text = &out.anonymization.anonymized_text;
 - `tiktag --json` emits machine-readable output without reversible metadata.
 - `tiktag --debug-json` emits the reversible map; local/debug use only.
 - `tiktag download` fetches the bundled model.
-- Diagnostics and timings go to stderr via `log`.
+- Diagnostics/timing logs go to stderr via `log`; JSON modes also emit `stats.timings` on stdout payload.
 - The CLI resolves `models/profiles.toml` by looking next to the binary first (`<exe_dir>/models/profiles.toml`), then falling back to cwd. No model/profile selection flags.
 - Prefer `--stdin` for large inputs: avoids shell argv limits and composes with pipelines.
 
@@ -111,6 +105,8 @@ let text = &out.anonymization.anonymized_text;
 - `stats.timings` is machine-dependent — content-hash pipelines must ignore it.
 - Additive field changes keep `schema_version`. Removing, renaming, or retyping a field bumps it.
 
-## Footguns & known-legacy
+## Caveats
 
-- macOS builds register the CoreML EP; other targets run CPU. ORT silently falls back to CPU if CoreML can't load. The CoreML compile is not cached to disk, so **CLI load pays recompile every invocation**; library hosts pay it once per process.
+- macOS builds register CoreML EP; non-macOS uses CPU EP.
+- ORT may silently fall back to CPU if CoreML fails.
+- CoreML compile not cached to disk: CLI pays compile each invocation; long-lived library host pays once per process.

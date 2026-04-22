@@ -2,6 +2,23 @@
 name = "tiktag"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
+description = "Rust library and CLI for multilingual text anonymization with a built-in ONNX NER model."
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/agmxyz/tiktag"
+homepage = "https://github.com/agmxyz/tiktag"
+documentation = "https://docs.rs/tiktag"
+keywords = ["anonymization", "pii", "ner", "onnx", "nlp"]
+categories = ["command-line-utilities", "text-processing"]
+include = [
+    "src/**/*",
+    "benches/anonymize.rs",
+    "models/profiles.toml",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+]
 
 [dependencies]
 anyhow = "1.0.102"
