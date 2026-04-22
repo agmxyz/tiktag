@@ -8,15 +8,21 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use hf_hub::api::sync::{Api, ApiBuilder};
 use log::info;
 
 const INTERNAL_PROFILES_PATH: &str = "models/profiles.toml";
+const DEFAULT_PROFILES_TOML: &str = r#"hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
+max_tokens = 512
+overlap_tokens = 128
+"#;
 const REQUIRED_FILES: &[&str] = &["config.json", "tokenizer.json", "onnx/model_quantized.onnx"];
 
 pub fn download() -> anyhow::Result<()> {
     let profiles_path = resolve_download_profiles_path()?;
+    ensure_profiles_file(&profiles_path)?;
     let profile = tiktag::Profiles::load(&profiles_path)?.resolve_default();
     let api = ApiBuilder::new()
         .build()
@@ -24,21 +30,54 @@ pub fn download() -> anyhow::Result<()> {
     fetch_bundle(&api, &profile)
 }
 
-/// Pick a destination for the bundle. Prefers `<exe_dir>/models/profiles.toml`
-/// next to the installed binary; falls back to `<cwd>/models/profiles.toml` for
-/// the `cargo run -- download` dev workflow (exe lives under `target/debug` or
-/// `target/release`). Creates the destination if missing — this is the bootstrap
-/// path, so neither candidate may exist yet.
+/// Pick a destination for the bundle.
+/// - Dev (`cargo run`): use `<cwd>/models/profiles.toml`.
+/// - Installed binary: use app-data path (`.../tiktag/models/profiles.toml`).
+/// - If app-data file is absent but legacy exe-dir file exists, keep legacy path.
 fn resolve_download_profiles_path() -> anyhow::Result<PathBuf> {
     let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(Path::to_path_buf));
-    let dest_dir = match exe_dir {
-        Some(dir) if is_cargo_target_dir(&dir) => PathBuf::from("."),
-        Some(dir) => dir,
-        None => PathBuf::from("."),
-    };
-    Ok(dest_dir.join(INTERNAL_PROFILES_PATH))
+    if exe_dir.as_deref().is_some_and(is_cargo_target_dir) {
+        return Ok(PathBuf::from(INTERNAL_PROFILES_PATH));
+    }
+
+    let app_candidate = crate::app_profiles_path();
+    let legacy_exe_candidate = exe_dir.map(|dir| dir.join(INTERNAL_PROFILES_PATH));
+
+    if let Some(path) = app_candidate.as_ref()
+        && path.exists()
+    {
+        return Ok(path.to_path_buf());
+    }
+    if let Some(path) = legacy_exe_candidate.as_ref()
+        && path.exists()
+    {
+        return Ok(path.to_path_buf());
+    }
+
+    if let Some(path) = app_candidate {
+        return Ok(path);
+    }
+    if let Some(path) = legacy_exe_candidate {
+        return Ok(path);
+    }
+    Err(anyhow!(
+        "failed to resolve profile destination (no app-data dir and no executable path)"
+    ))
+}
+
+fn ensure_profiles_file(path: &Path) -> anyhow::Result<()> {
+    if path.exists() {
+        return Ok(());
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create profiles dir {}", parent.display()))?;
+    }
+    fs::write(path, DEFAULT_PROFILES_TOML)
+        .with_context(|| format!("failed to write bootstrap profile {}", path.display()))?;
+    Ok(())
 }
 
 /// Dumb check: is this the `target/debug` or `target/release` dir from
@@ -90,7 +129,9 @@ fn fetch_bundle(api: &Api, profile: &tiktag::ResolvedProfile) -> anyhow::Result<
 
 #[cfg(test)]
 mod tests {
-    use super::{ApiBuilder, fetch_bundle};
+    use std::fs;
+
+    use super::{ApiBuilder, DEFAULT_PROFILES_TOML, ensure_profiles_file, fetch_bundle};
 
     #[test]
     #[ignore = "network: hits huggingface.co"]
@@ -105,5 +146,34 @@ mod tests {
         };
         let api = ApiBuilder::new().build().expect("api");
         fetch_bundle(&api, &profile).expect("fetch");
+    }
+
+    #[test]
+    fn bootstraps_profiles_file_when_missing() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let profiles_path = temp.path().join("models/profiles.toml");
+
+        ensure_profiles_file(&profiles_path).expect("bootstrap profile");
+
+        let written = fs::read_to_string(&profiles_path).expect("read profile");
+        assert_eq!(written, DEFAULT_PROFILES_TOML);
+    }
+
+    #[test]
+    fn does_not_overwrite_existing_profiles_file() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let profiles_path = temp.path().join("models/profiles.toml");
+        let custom = r#"hf_repo = "custom/repo"
+model_dir = "custom-dir"
+max_tokens = 256
+overlap_tokens = 64
+"#;
+        fs::create_dir_all(profiles_path.parent().expect("parent")).expect("mkdir");
+        fs::write(&profiles_path, custom).expect("write custom");
+
+        ensure_profiles_file(&profiles_path).expect("preserve custom");
+
+        let written = fs::read_to_string(&profiles_path).expect("read profile");
+        assert_eq!(written, custom);
     }
 }
