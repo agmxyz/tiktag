@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1] - 2026-04-23
+
+### Added
+- MIT licensing + security policy + CI workflow for OSS release baseline.
+- Crates.io metadata and package include-list hardening.
+- README install/quickstart, light caveat, and model attribution updates.
+
 
 ## [0.1.0] - 2026-04-22
 
