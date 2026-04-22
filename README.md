@@ -19,7 +19,7 @@ cargo install --path .
 ```bash
 tiktag download
 tiktag "Maria Garcia from OpenAI visited Berlin."
-echo "Contact maria@example.com" | tiktag --stdin --json
+echo "Maria Garcia from OpenAI visited Berlin." | tiktag --stdin --json
 ```
 
 ## Library
@@ -42,7 +42,7 @@ println!("{}", out.anonymization.anonymized_text);
 
 ```bash
 tiktag "Maria Garcia from OpenAI visited Berlin."
-echo "Contact maria@example.com" | tiktag --stdin
+echo "Maria Garcia from OpenAI visited Berlin." | tiktag --stdin
 tiktag --stdin --json < file.txt
 tiktag --stdin --debug-json < file.txt  # reversible map; debug only
 tiktag download                         # fetch model assets
@@ -50,7 +50,7 @@ tiktag download                         # fetch model assets
 
 Flags: `--stdin`, `--json`, `--debug-json`, `--show-tokens`.
 
-The CLI resolves `models/profiles.toml` by checking next to the binary first, then the current working directory — run from anywhere once the bundle is next to `tiktag`.
+The CLI resolves `models/profiles.toml` from an OS app-data directory first (`.../tiktag/models/profiles.toml`), then falls back to legacy locations (next to binary, then current working directory).
 
 ## JSON
 

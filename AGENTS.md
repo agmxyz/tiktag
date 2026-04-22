@@ -96,7 +96,7 @@ let text = &out.anonymization.anonymized_text;
 - `tiktag --debug-json` emits the reversible map; local/debug use only.
 - `tiktag download` fetches the bundled model.
 - Diagnostics/timing logs go to stderr via `log`; JSON modes also emit `stats.timings` on stdout payload.
-- The CLI resolves `models/profiles.toml` by looking next to the binary first (`<exe_dir>/models/profiles.toml`), then falling back to cwd. No model/profile selection flags.
+- The CLI resolves `models/profiles.toml` from app-data (`.../tiktag/models/profiles.toml`) first, then legacy fallback (`<exe_dir>/models/profiles.toml`, then cwd). No model/profile selection flags.
 - Prefer `--stdin` for large inputs: avoids shell argv limits and composes with pipelines.
 
 ## JSON output

@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 use tiktag::{AnonymizationResult, REQUIRED_MODEL_FILES, Replacement, Tiktag};
 
 const JSON_SCHEMA_VERSION: u32 = 1;
+const APP_NAME: &str = "tiktag";
 /// Logical identifier for the bundled profile file. Used as the bundle-hash
 /// label so provenance hashes stay stable regardless of install location.
 /// The actual filesystem path is resolved at runtime (see `resolve_profiles_path`).
@@ -147,21 +148,74 @@ fn run_inference(args: cli::RunArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Resolve the bundled profiles.toml by checking exe-dir, then cwd.
-/// Returns the first existing path, or an error listing both candidates.
+/// Resolve profiles.toml by checking app-data dir, then legacy exe-dir, then cwd.
+/// Returns the first existing path, or an error listing all candidates.
 fn resolve_profiles_path() -> anyhow::Result<PathBuf> {
+    let app_candidate = app_profiles_path();
     let exe_candidate = std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(|dir| dir.join(INTERNAL_PROFILES_LABEL)));
     let cwd_candidate = PathBuf::from(INTERNAL_PROFILES_LABEL);
-    pick_existing_profile(exe_candidate.as_deref(), &cwd_candidate)
+    pick_existing_profile(
+        app_candidate.as_deref(),
+        exe_candidate.as_deref(),
+        &cwd_candidate,
+    )
 }
 
-/// Prefer the exe-dir candidate, fall back to cwd. Errors list both paths tried.
+pub(crate) fn app_profiles_path() -> Option<PathBuf> {
+    app_data_dir().map(|dir| dir.join(INTERNAL_PROFILES_LABEL))
+}
+
+fn app_data_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "macos")]
+    {
+        std::env::var_os("HOME").map(PathBuf::from).map(|home| {
+            home.join("Library")
+                .join("Application Support")
+                .join(APP_NAME)
+        })
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(xdg_data_home) = std::env::var_os("XDG_DATA_HOME") {
+            return Some(PathBuf::from(xdg_data_home).join(APP_NAME));
+        }
+        std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .map(|home| home.join(".local").join("share").join(APP_NAME))
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(appdata) = std::env::var_os("APPDATA") {
+            return Some(PathBuf::from(appdata).join(APP_NAME));
+        }
+        std::env::var_os("USERPROFILE")
+            .map(PathBuf::from)
+            .map(|home| home.join("AppData").join("Roaming").join(APP_NAME))
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    {
+        std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .map(|home| home.join(format!(".{APP_NAME}")))
+    }
+}
+
+/// Prefer app-data candidate, then legacy exe-dir, then cwd.
 fn pick_existing_profile(
+    app_candidate: Option<&Path>,
     exe_candidate: Option<&Path>,
     cwd_candidate: &Path,
 ) -> anyhow::Result<PathBuf> {
+    if let Some(path) = app_candidate
+        && path.exists()
+    {
+        return Ok(path.to_path_buf());
+    }
     if let Some(path) = exe_candidate
         && path.exists()
     {
@@ -171,11 +225,14 @@ fn pick_existing_profile(
         return Ok(cwd_candidate.to_path_buf());
     }
 
+    let app_display = app_candidate
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|| "<unavailable app data dir>".to_owned());
     let exe_display = exe_candidate
         .map(|p| p.display().to_string())
         .unwrap_or_else(|| "<unknown exe dir>".to_owned());
     Err(anyhow!(
-        "failed to locate bundle profile file. Tried:\n  - {exe_display}\n  - {}",
+        "failed to locate bundle profile file. Tried:\n  - {app_display}\n  - {exe_display}\n  - {}",
         cwd_candidate.display()
     ))
 }
@@ -507,31 +564,64 @@ mod tests {
     }
 
     #[test]
-    fn pick_existing_profile_prefers_exe_dir_over_cwd() {
+    fn pick_existing_profile_prefers_app_dir_over_legacy_paths() {
+        let app_dir = tempfile::tempdir().expect("app temp");
         let exe_dir = tempfile::tempdir().expect("exe temp");
         let cwd_dir = tempfile::tempdir().expect("cwd temp");
+
+        let app_profile = app_dir.path().join(INTERNAL_PROFILES_LABEL);
+        std::fs::create_dir_all(app_profile.parent().unwrap()).unwrap();
+        std::fs::write(&app_profile, b"app").unwrap();
 
         let exe_profile = exe_dir.path().join(INTERNAL_PROFILES_LABEL);
         std::fs::create_dir_all(exe_profile.parent().unwrap()).unwrap();
         std::fs::write(&exe_profile, b"exe").unwrap();
 
-        // cwd candidate does NOT exist
         let cwd_profile = cwd_dir.path().join(INTERNAL_PROFILES_LABEL);
+        std::fs::create_dir_all(cwd_profile.parent().unwrap()).unwrap();
+        std::fs::write(&cwd_profile, b"cwd").unwrap();
 
-        let resolved = pick_existing_profile(Some(&exe_profile), &cwd_profile).expect("resolve");
+        let resolved = pick_existing_profile(Some(&app_profile), Some(&exe_profile), &cwd_profile)
+            .expect("resolve");
+        assert_eq!(resolved, app_profile);
+    }
+
+    #[test]
+    fn pick_existing_profile_prefers_exe_dir_over_cwd_when_app_missing() {
+        let app_dir = tempfile::tempdir().expect("app temp");
+        let exe_dir = tempfile::tempdir().expect("exe temp");
+        let cwd_dir = tempfile::tempdir().expect("cwd temp");
+
+        let app_profile = app_dir.path().join(INTERNAL_PROFILES_LABEL);
+        let exe_profile = exe_dir.path().join(INTERNAL_PROFILES_LABEL);
+        std::fs::create_dir_all(exe_profile.parent().unwrap()).unwrap();
+        std::fs::write(&exe_profile, b"exe").unwrap();
+
+        let cwd_profile = cwd_dir.path().join(INTERNAL_PROFILES_LABEL);
+        std::fs::create_dir_all(cwd_profile.parent().unwrap()).unwrap();
+        std::fs::write(&cwd_profile, b"cwd").unwrap();
+
+        let resolved = pick_existing_profile(Some(&app_profile), Some(&exe_profile), &cwd_profile)
+            .expect("resolve");
         assert_eq!(resolved, exe_profile);
     }
 
     #[test]
     fn pick_existing_profile_errors_list_both_paths() {
+        let app_dir = tempfile::tempdir().expect("app temp");
         let exe_dir = tempfile::tempdir().expect("exe temp");
         let cwd_dir = tempfile::tempdir().expect("cwd temp");
+        let app_profile = app_dir.path().join(INTERNAL_PROFILES_LABEL);
         let exe_profile = exe_dir.path().join(INTERNAL_PROFILES_LABEL);
         let cwd_profile = cwd_dir.path().join(INTERNAL_PROFILES_LABEL);
 
-        let err = pick_existing_profile(Some(&exe_profile), &cwd_profile)
+        let err = pick_existing_profile(Some(&app_profile), Some(&exe_profile), &cwd_profile)
             .expect_err("should fail when neither exists");
         let msg = err.to_string();
+        assert!(
+            msg.contains(&app_profile.display().to_string()),
+            "msg: {msg}"
+        );
         assert!(
             msg.contains(&exe_profile.display().to_string()),
             "msg: {msg}"
