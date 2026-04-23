@@ -19,6 +19,7 @@ pub struct ResolvedProfile {
     pub model_dir: PathBuf,
     pub max_tokens: usize,
     pub overlap_tokens: usize,
+    pub date_time_recognizer: bool,
 }
 
 /// Parsed internal config. Holds the base directory for resolving relative model_dir paths.
@@ -34,6 +35,7 @@ struct ProfileSpec {
     model_dir: PathBuf,
     max_tokens: usize,
     overlap_tokens: usize,
+    date_time_recognizer: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -43,6 +45,25 @@ struct ProfileFileRaw {
     model_dir: PathBuf,
     max_tokens: usize,
     overlap_tokens: usize,
+    #[serde(default)]
+    recognizers: RecognizersRaw,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RecognizersRaw {
+    #[serde(default = "default_true")]
+    date_time: bool,
+}
+
+impl Default for RecognizersRaw {
+    fn default() -> Self {
+        Self { date_time: true }
+    }
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Profiles {
@@ -74,6 +95,7 @@ impl Profiles {
             model_dir: resolve_profile_model_dir(&self.base_dir, &self.profile.model_dir),
             max_tokens: self.profile.max_tokens,
             overlap_tokens: self.profile.overlap_tokens,
+            date_time_recognizer: self.profile.date_time_recognizer,
         }
     }
 
@@ -105,6 +127,7 @@ impl Profiles {
                 model_dir: raw.model_dir,
                 max_tokens: raw.max_tokens,
                 overlap_tokens: raw.overlap_tokens,
+                date_time_recognizer: raw.recognizers.date_time,
             },
         })
     }
@@ -156,6 +179,7 @@ overlap_tokens = 128
         );
         assert_eq!(resolved.max_tokens, 512);
         assert_eq!(resolved.overlap_tokens, 128);
+        assert!(resolved.date_time_recognizer);
     }
 
     #[test]
@@ -220,5 +244,45 @@ overlap_tokens = 510
         .expect_err("overlap >= max_tokens - 2 should fail");
 
         assert!(err.to_string().contains("overlap_tokens=510"));
+    }
+
+    #[test]
+    fn recognizers_date_time_can_be_disabled() {
+        let profiles = Profiles::from_raw(
+            &PathBuf::from("models"),
+            r#"
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
+max_tokens = 512
+overlap_tokens = 128
+
+[recognizers]
+date_time = false
+"#,
+        )
+        .expect("profiles should parse");
+
+        let resolved = profiles.resolve_default();
+        assert!(!resolved.date_time_recognizer);
+    }
+
+    #[test]
+    fn rejects_unknown_recognizer_fields() {
+        let err = Profiles::from_raw(
+            &PathBuf::from("models"),
+            r#"
+hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
+model_dir = "distilbert-base-multilingual-cased-ner-hrl"
+max_tokens = 512
+overlap_tokens = 128
+
+[recognizers]
+date_time = true
+unknown_key = true
+"#,
+        )
+        .expect_err("unknown recognizer field should fail");
+
+        assert!(err.to_string().contains("unknown field"));
     }
 }

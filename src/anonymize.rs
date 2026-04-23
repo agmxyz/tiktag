@@ -1,17 +1,15 @@
 // Entity → placeholder rewriting.
 //
 // Pipeline:
-//   1. build_candidate:  map NER label → PlaceholderFamily (PER/ORG/LOC), drop
+//   1. build_candidate:  map labels → PlaceholderFamily (PER/ORG/LOC/DATE_TIME), drop
 //                        junk/domains/emails that slip past the model.
 //   2. resolve_overlaps: overlapping spans collapse to one winner per cluster;
-//                        tie-break by family priority (PER < ORG < LOC), then
+//                        tie-break by family priority (PER < ORG < LOC < DATE_TIME), then
 //                        longer span, then earlier start.
 //   3. assign_placeholders: per-family counter; identical normalized text reuses
 //                           the same placeholder → stable within one document,
 //                           no cross-document identity.
 //   4. rewrite_text:     single forward pass, replacements arrive pre-sorted.
-//
-// DATE is intentionally unsupported on this model (unstable detection).
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -27,6 +25,7 @@ pub enum PlaceholderFamily {
     Person,
     Org,
     Location,
+    DateTime,
 }
 
 impl PlaceholderFamily {
@@ -35,17 +34,20 @@ impl PlaceholderFamily {
             Self::Person => "PERSON",
             Self::Org => "ORG",
             Self::Location => "LOCATION",
+            Self::DateTime => "DATE_TIME",
         }
     }
 
-    /// Lower rank wins overlap ties: PER beats ORG beats LOC. Matches the
+    /// Lower rank wins overlap ties: PER beats ORG beats LOC beats DATE_TIME. Matches the
     /// common case where a person name (e.g. "Maria Garcia") overlaps an ORG
-    /// label ("Garcia Consulting") — we prefer the person.
+    /// label ("Garcia Consulting") — we prefer the person. DATE_TIME is lowest
+    /// priority to minimize regressions with model entities.
     fn priority_rank(self) -> u8 {
         match self {
             Self::Person => 0,
             Self::Org => 1,
             Self::Location => 2,
+            Self::DateTime => 3,
         }
     }
 }
@@ -247,11 +249,11 @@ fn count_replacements_by_family(replacements: &[Replacement]) -> BTreeMap<String
 }
 
 fn map_label_to_family(label: &str) -> Option<PlaceholderFamily> {
-    // DATE intentionally dropped for Xenova baseline due unstable detection.
     match label {
         "PER" => Some(PlaceholderFamily::Person),
         "ORG" => Some(PlaceholderFamily::Org),
         "LOC" => Some(PlaceholderFamily::Location),
+        "DATE_TIME" => Some(PlaceholderFamily::DateTime),
         _ => None,
     }
 }
@@ -281,6 +283,7 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
         PlaceholderFamily::Location => {
             letter_count >= 2 && digit_count == 0 && !is_common_junk_token(&lower)
         }
+        PlaceholderFamily::DateTime => digit_count >= 4,
     }
 }
 
@@ -429,5 +432,31 @@ mod tests {
 
         assert_eq!(result.replacements.len(), 1);
         assert!((result.replacements[0].score - 0.73).abs() < 1e-6);
+    }
+
+    #[test]
+    fn anonymizes_date_time_family() {
+        let text = "The deadline is 2024-01-15.";
+        let result = anonymize_ok(text, &[span("DATE_TIME", 16, 26, "2024-01-15")]);
+
+        assert_eq!(result.anonymized_text, "The deadline is [DATE_TIME_1].");
+        assert_eq!(
+            result.counts_by_family.get("DATE_TIME"),
+            Some(&1usize),
+            "date family should be counted"
+        );
+    }
+
+    #[test]
+    fn overlap_prefers_person_over_date_time() {
+        let text = "Maria";
+        let result = anonymize_ok(
+            text,
+            &[span("DATE_TIME", 0, 5, "Maria"), span("PER", 0, 5, "Maria")],
+        );
+
+        assert_eq!(result.replacements.len(), 1);
+        assert_eq!(result.replacements[0].family, PlaceholderFamily::Person);
+        assert_eq!(result.anonymized_text, "[PERSON_1]");
     }
 }

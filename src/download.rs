@@ -17,6 +17,9 @@ const DEFAULT_PROFILES_TOML: &str = r#"hf_repo = "Xenova/distilbert-base-multili
 model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128
+
+[recognizers]
+date_time = true
 "#;
 const REQUIRED_FILES: &[&str] = &["config.json", "tokenizer.json", "onnx/model_quantized.onnx"];
 
@@ -143,6 +146,7 @@ mod tests {
             model_dir: temp.path().to_path_buf(),
             max_tokens: 512,
             overlap_tokens: 128,
+            date_time_recognizer: true,
         };
         let api = ApiBuilder::new().build().expect("api");
         fetch_bundle(&api, &profile).expect("fetch");

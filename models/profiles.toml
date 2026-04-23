@@ -9,3 +9,6 @@ hf_repo = "Xenova/distilbert-base-multilingual-cased-ner-hrl"
 model_dir = "distilbert-base-multilingual-cased-ner-hrl"
 max_tokens = 512
 overlap_tokens = 128
+
+[recognizers]
+date_time = true
