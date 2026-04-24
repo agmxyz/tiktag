@@ -1,6 +1,8 @@
 // Post-processing: turns raw ONNX logits into merged entity spans for the
 // built-in Xenova DistilBERT NER model. Merge rules are strict BIO only.
 
+use std::borrow::Cow;
+
 use ndarray::ArrayView3;
 use serde::Serialize;
 use tokenizers::Encoding;
@@ -8,7 +10,7 @@ use tokenizers::Encoding;
 /// A detected entity: label (e.g. "PER"), byte offsets into the original text, and the text itself.
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct EntitySpan {
-    pub label: String,
+    pub label: Cow<'static, str>,
     pub start: usize,
     pub end: usize,
     pub text: String,
@@ -96,14 +98,14 @@ pub fn decode_entities(
             .and_then(|entity| {
                 let gap_start = entity.end.min(start);
                 let gap = text.get(gap_start..start).unwrap_or("");
-                merged_label(entity.label.as_str(), kind, prefix, gap)
+                merged_label(entity.label.as_ref(), kind, prefix, gap)
             })
             .map(str::to_owned);
 
         if current.is_none() || merge_label.is_none() {
             flush_entity(&mut current, &mut entities);
             current = Some(EntitySpan {
-                label: kind.to_owned(),
+                label: Cow::Owned(kind.to_owned()),
                 start,
                 end,
                 text: text.get(start..end).unwrap_or("").to_owned(),
@@ -114,7 +116,7 @@ pub fn decode_entities(
 
         if let Some(entity) = current.as_mut() {
             if let Some(merged) = merge_label {
-                entity.label = merged;
+                entity.label = Cow::Owned(merged);
             }
             entity.end = end;
             if let Some(span_text) = text.get(entity.start..entity.end) {
@@ -167,6 +169,8 @@ fn is_generic_gap(gap: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use tokenizers::Encoding;
 
     use super::{EntitySpan, decode_entities};
@@ -196,7 +200,7 @@ mod tests {
 
     fn span(label: &str, start: usize, end: usize, text: &str) -> EntitySpan {
         EntitySpan {
-            label: label.to_owned(),
+            label: Cow::Owned(label.to_owned()),
             start,
             end,
             text: text.to_owned(),

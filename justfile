@@ -46,7 +46,7 @@ run-debug-json-stdin:
     cargo run -- --stdin --debug-json
 
 sample:
-    cargo run -- "Maria Garcia from OpenAI visited Berlin."
+    cargo run -- "Maria Garcia from OpenAI visited Berlin. She can be reached at Maria@gmail.com"
 
 download:
     cargo run -- download

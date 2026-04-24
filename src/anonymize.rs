@@ -1,10 +1,10 @@
 // Entity → placeholder rewriting.
 //
 // Pipeline:
-//   1. build_candidate:  map labels → PlaceholderFamily (PER/ORG/LOC/DATE_TIME), drop
+//   1. build_candidate:  map labels → PlaceholderFamily (PER/ORG/LOC/EMAIL_ADDRESS), drop
 //                        junk/domains/emails that slip past the model.
 //   2. resolve_overlaps: overlapping spans collapse to one winner per cluster;
-//                        tie-break by family priority (PER < ORG < LOC < DATE_TIME), then
+//                        tie-break by family priority (EMAIL_ADDRESS < PER < ORG < LOC), then
 //                        longer span, then earlier start.
 //   3. assign_placeholders: per-family counter; identical normalized text reuses
 //                           the same placeholder → stable within one document,
@@ -22,32 +22,30 @@ use crate::error::TiktagError;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PlaceholderFamily {
+    EmailAddress,
     Person,
     Org,
     Location,
-    DateTime,
 }
 
 impl PlaceholderFamily {
     fn as_str(self) -> &'static str {
         match self {
+            Self::EmailAddress => "EMAIL_ADDRESS",
             Self::Person => "PERSON",
             Self::Org => "ORG",
             Self::Location => "LOCATION",
-            Self::DateTime => "DATE_TIME",
         }
     }
 
-    /// Lower rank wins overlap ties: PER beats ORG beats LOC beats DATE_TIME. Matches the
-    /// common case where a person name (e.g. "Maria Garcia") overlaps an ORG
-    /// label ("Garcia Consulting") — we prefer the person. DATE_TIME is lowest
-    /// priority to minimize regressions with model entities.
+    /// Lower rank wins overlap ties. EMAIL_ADDRESS outranks model families to
+    /// avoid leaking full email literals when model spans overlap local parts.
     fn priority_rank(self) -> u8 {
         match self {
-            Self::Person => 0,
-            Self::Org => 1,
-            Self::Location => 2,
-            Self::DateTime => 3,
+            Self::EmailAddress => 0,
+            Self::Person => 1,
+            Self::Org => 2,
+            Self::Location => 3,
         }
     }
 }
@@ -125,7 +123,7 @@ pub fn anonymize(text: &str, entities: &[EntitySpan]) -> Result<AnonymizationRes
 }
 
 fn build_candidate(entity: &EntitySpan) -> Option<ReplacementCandidate> {
-    let family = map_label_to_family(entity.label.as_str())?;
+    let family = map_label_to_family(entity.label.as_ref())?;
     let normalized = entity.text.trim();
     if normalized.is_empty() || !is_valid_candidate(family, normalized) {
         return None;
@@ -250,10 +248,10 @@ fn count_replacements_by_family(replacements: &[Replacement]) -> BTreeMap<String
 
 fn map_label_to_family(label: &str) -> Option<PlaceholderFamily> {
     match label {
+        "EMAIL_ADDRESS" => Some(PlaceholderFamily::EmailAddress),
         "PER" => Some(PlaceholderFamily::Person),
         "ORG" => Some(PlaceholderFamily::Org),
         "LOC" => Some(PlaceholderFamily::Location),
-        "DATE_TIME" => Some(PlaceholderFamily::DateTime),
         _ => None,
     }
 }
@@ -271,6 +269,13 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
     let digit_count = text.chars().filter(|ch| ch.is_ascii_digit()).count();
 
     match family {
+        PlaceholderFamily::EmailAddress => {
+            let has_at = text.contains('@');
+            let has_dot = text
+                .rsplit_once('@')
+                .is_some_and(|(_, domain)| domain.contains('.'));
+            has_at && has_dot
+        }
         PlaceholderFamily::Person => letter_count >= 2 && !is_common_junk_token(&lower),
         PlaceholderFamily::Org => {
             let looks_like_email = text.contains('@');
@@ -283,7 +288,6 @@ fn is_valid_candidate(family: PlaceholderFamily, text: &str) -> bool {
         PlaceholderFamily::Location => {
             letter_count >= 2 && digit_count == 0 && !is_common_junk_token(&lower)
         }
-        PlaceholderFamily::DateTime => digit_count >= 4,
     }
 }
 
@@ -296,6 +300,8 @@ fn is_common_junk_token(lower: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use super::{AnonymizationResult, PlaceholderFamily, anonymize};
     use crate::decode::EntitySpan;
 
@@ -311,7 +317,7 @@ mod tests {
         score: f32,
     ) -> EntitySpan {
         EntitySpan {
-            label: label.to_owned(),
+            label: Cow::Owned(label.to_owned()),
             start,
             end,
             text: text.to_owned(),
@@ -435,31 +441,34 @@ mod tests {
     }
 
     #[test]
-    fn anonymizes_date_time_family() {
-        let text = "The deadline is 2024-01-15.";
-        let result = anonymize_ok(text, &[span("DATE_TIME", 16, 26, "2024-01-15")]);
+    fn anonymizes_email_family() {
+        let text = "Reach me at sara@example.com.";
+        let result = anonymize_ok(text, &[span("EMAIL_ADDRESS", 12, 28, "sara@example.com")]);
 
-        assert_eq!(result.anonymized_text, "The deadline is [DATE_TIME_1].");
+        assert_eq!(result.anonymized_text, "Reach me at [EMAIL_ADDRESS_1].");
         assert_eq!(
-            result.counts_by_family.get("DATE_TIME"),
+            result.counts_by_family.get("EMAIL_ADDRESS"),
             Some(&1usize),
-            "date family should be counted"
+            "email family should be counted"
         );
     }
 
     #[test]
-    fn overlap_prefers_person_over_date_time() {
-        let text = "Maria 2024";
+    fn overlap_prefers_email_over_person() {
+        let text = "Maria@example.com";
         let result = anonymize_ok(
             text,
             &[
-                span("DATE_TIME", 0, 10, "Maria 2024"),
+                span("EMAIL_ADDRESS", 0, 17, "Maria@example.com"),
                 span("PER", 0, 5, "Maria"),
             ],
         );
 
         assert_eq!(result.replacements.len(), 1);
-        assert_eq!(result.replacements[0].family, PlaceholderFamily::Person);
-        assert_eq!(result.anonymized_text, "[PERSON_1] 2024");
+        assert_eq!(
+            result.replacements[0].family,
+            PlaceholderFamily::EmailAddress
+        );
+        assert_eq!(result.anonymized_text, "[EMAIL_ADDRESS_1]");
     }
 }

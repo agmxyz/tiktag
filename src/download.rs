@@ -19,7 +19,7 @@ max_tokens = 512
 overlap_tokens = 128
 
 [recognizers]
-date_time = true
+email = true
 "#;
 const REQUIRED_FILES: &[&str] = &["config.json", "tokenizer.json", "onnx/model_quantized.onnx"];
 
@@ -146,7 +146,7 @@ mod tests {
             model_dir: temp.path().to_path_buf(),
             max_tokens: 512,
             overlap_tokens: 128,
-            date_time_recognizer: true,
+            email_recognizer: true,
         };
         let api = ApiBuilder::new().build().expect("api");
         fetch_bundle(&api, &profile).expect("fetch");

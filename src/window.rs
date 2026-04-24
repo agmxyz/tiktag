@@ -102,12 +102,14 @@ fn deduplicate(mut entities: Vec<EntitySpan>) -> Vec<EntitySpan> {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use super::*;
     use crate::decode::EntitySpan;
 
     fn span(label: &str, start: usize, end: usize, text: &str) -> EntitySpan {
         EntitySpan {
-            label: label.to_owned(),
+            label: Cow::Owned(label.to_owned()),
             start,
             end,
             text: text.to_owned(),

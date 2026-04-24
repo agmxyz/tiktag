@@ -11,4 +11,4 @@ max_tokens = 512
 overlap_tokens = 128
 
 [recognizers]
-date_time = true
+email = true

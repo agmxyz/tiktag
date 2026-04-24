@@ -57,8 +57,8 @@ impl Tiktag {
         let mut entities = inference.entities;
         // Keep this sequential for simplicity; if profiling shows need, regex recognizers can
         // run in parallel with inference prep and merge here with the same overlap rules.
-        if self.profile.date_time_recognizer {
-            entities.extend(recognizers::date_time::detect(text));
+        if self.profile.email_recognizer {
+            entities.extend(recognizers::email::detect(text));
         }
         let anonymization = anonymize::anonymize(text, &entities)?;
 
