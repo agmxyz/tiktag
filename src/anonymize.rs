@@ -449,14 +449,17 @@ mod tests {
 
     #[test]
     fn overlap_prefers_person_over_date_time() {
-        let text = "Maria";
+        let text = "Maria 2024";
         let result = anonymize_ok(
             text,
-            &[span("DATE_TIME", 0, 5, "Maria"), span("PER", 0, 5, "Maria")],
+            &[
+                span("DATE_TIME", 0, 10, "Maria 2024"),
+                span("PER", 0, 5, "Maria"),
+            ],
         );
 
         assert_eq!(result.replacements.len(), 1);
         assert_eq!(result.replacements[0].family, PlaceholderFamily::Person);
-        assert_eq!(result.anonymized_text, "[PERSON_1]");
+        assert_eq!(result.anonymized_text, "[PERSON_1] 2024");
     }
 }
