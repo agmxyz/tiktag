@@ -18,6 +18,16 @@ pub struct EntitySpan {
     pub score: f32,
 }
 
+struct DecodeView<'a> {
+    text: &'a str,
+    tokens: &'a [String],
+    offsets: &'a [(usize, usize)],
+    special_mask: &'a [u32],
+    predictions_with_probs: &'a [(usize, f32)],
+    labels: &'a [String],
+    upper: usize,
+}
+
 /// Pick the highest-scoring label for each token position, returning both the
 /// argmax label index and the softmax probability of that label.
 ///
@@ -70,43 +80,47 @@ pub fn decode_entities(
         .min(offsets.len())
         .min(special_mask.len())
         .min(tokens.len());
+    let view = DecodeView {
+        text,
+        tokens,
+        offsets,
+        special_mask,
+        predictions_with_probs,
+        labels,
+        upper,
+    };
 
     let mut entities = Vec::new();
     let mut current: Option<EntitySpan> = None;
     let mut index = 0usize;
 
-    while index < upper {
-        if special_mask[index] != 0 {
+    while index < view.upper {
+        if view.special_mask[index] != 0 {
             flush_entity(&mut current, &mut entities);
             index += 1;
             continue;
         }
 
-        let Some((start, end)) = token_bounds(text, offsets, index) else {
+        let Some((start, end)) = token_bounds(view.text, view.offsets, index) else {
             flush_entity(&mut current, &mut entities);
             index += 1;
             continue;
         };
 
-        let (label_idx, token_prob) = predictions_with_probs[index];
-        let label = labels.get(label_idx).map(String::as_str).unwrap_or("O");
+        let (label_idx, token_prob) = view.predictions_with_probs[index];
+        let label = view
+            .labels
+            .get(label_idx)
+            .map(String::as_str)
+            .unwrap_or("O");
 
         if label == "O" {
             if let Some(entity) = current.as_mut()
-                && let Some((resume_index, repaired_end)) = repair_intra_word_o_glitch(
-                    text,
-                    tokens,
-                    offsets,
-                    special_mask,
-                    predictions_with_probs,
-                    labels,
-                    entity,
-                    index,
-                    upper,
-                )
+                && let Some((resume_index, repaired_end)) =
+                    repair_intra_word_o_glitch(&view, entity, index)
             {
                 entity.end = repaired_end;
-                if let Some(span_text) = text.get(entity.start..entity.end) {
+                if let Some(span_text) = view.text.get(entity.start..entity.end) {
                     entity.text = span_text.to_owned();
                 }
                 index = resume_index;
@@ -127,32 +141,24 @@ pub fn decode_entities(
             .as_ref()
             .and_then(|entity| {
                 let gap_start = entity.end.min(start);
-                let gap = text.get(gap_start..start).unwrap_or("");
+                let gap = view.text.get(gap_start..start).unwrap_or("");
                 merged_label(entity.label.as_ref(), kind, prefix, gap)
             })
             .map(str::to_owned);
 
         if current.is_none() || merge_label.is_none() {
-            let repaired_start = if prefix == "I" && is_continuation_subword(tokens[index].as_str())
-            {
-                backfill_orphan_i_start(
-                    text,
-                    offsets,
-                    special_mask,
-                    predictions_with_probs,
-                    labels,
-                    index,
-                )
-                .unwrap_or(start)
-            } else {
-                start
-            };
+            let repaired_start =
+                if prefix == "I" && is_continuation_subword(view.tokens[index].as_str()) {
+                    backfill_orphan_i_start(&view, index).unwrap_or(start)
+                } else {
+                    start
+                };
             flush_entity(&mut current, &mut entities);
             current = Some(EntitySpan {
                 label: Cow::Owned(kind.to_owned()),
                 start: repaired_start,
                 end,
-                text: text.get(repaired_start..end).unwrap_or("").to_owned(),
+                text: view.text.get(repaired_start..end).unwrap_or("").to_owned(),
                 score: token_prob,
             });
             index += 1;
@@ -164,7 +170,7 @@ pub fn decode_entities(
                 entity.label = Cow::Owned(merged);
             }
             entity.end = end;
-            if let Some(span_text) = text.get(entity.start..entity.end) {
+            if let Some(span_text) = view.text.get(entity.start..entity.end) {
                 entity.text = span_text.to_owned();
             }
             entity.score = entity.score.min(token_prob);
@@ -221,33 +227,27 @@ fn is_continuation_subword(token: &str) -> bool {
 }
 
 fn repair_intra_word_o_glitch(
-    text: &str,
-    tokens: &[String],
-    offsets: &[(usize, usize)],
-    special_mask: &[u32],
-    predictions_with_probs: &[(usize, f32)],
-    labels: &[String],
+    view: &DecodeView<'_>,
     current: &EntitySpan,
     index: usize,
-    upper: usize,
 ) -> Option<(usize, usize)> {
-    if !is_continuation_subword(tokens.get(index)?.as_str()) {
+    if !is_continuation_subword(view.tokens.get(index)?.as_str()) {
         return None;
     }
 
-    let (start, end) = token_bounds(text, offsets, index)?;
-    if start != current.end || token_label(predictions_with_probs, labels, index) != "O" {
+    let (start, end) = token_bounds(view.text, view.offsets, index)?;
+    if start != current.end || token_label(view.predictions_with_probs, view.labels, index) != "O" {
         return None;
     }
 
     let mut run_end = end;
     let mut scan = index;
-    while scan < upper {
-        if special_mask[scan] != 0 {
+    while scan < view.upper {
+        if view.special_mask[scan] != 0 {
             break;
         }
 
-        let Some((scan_start, scan_end)) = token_bounds(text, offsets, scan) else {
+        let Some((scan_start, scan_end)) = token_bounds(view.text, view.offsets, scan) else {
             break;
         };
         if scan_start != run_end.min(scan_start)
@@ -256,8 +256,8 @@ fn repair_intra_word_o_glitch(
             break;
         }
 
-        if token_label(predictions_with_probs, labels, scan) != "O"
-            || !is_continuation_subword(tokens[scan].as_str())
+        if token_label(view.predictions_with_probs, view.labels, scan) != "O"
+            || !is_continuation_subword(view.tokens[scan].as_str())
         {
             break;
         }
@@ -266,16 +266,16 @@ fn repair_intra_word_o_glitch(
         scan += 1;
     }
 
-    if scan >= upper || special_mask[scan] != 0 {
+    if scan >= view.upper || view.special_mask[scan] != 0 {
         return None;
     }
 
-    let (next_start, _) = token_bounds(text, offsets, scan)?;
+    let (next_start, _) = token_bounds(view.text, view.offsets, scan)?;
     if next_start != run_end {
         return None;
     }
 
-    let next_label = token_label(predictions_with_probs, labels, scan);
+    let next_label = token_label(view.predictions_with_probs, view.labels, scan);
     let (prefix, kind) = split_bio_label(next_label)?;
     if prefix != "I" || kind != current.label.as_ref() {
         return None;
@@ -284,27 +284,26 @@ fn repair_intra_word_o_glitch(
     Some((scan, run_end))
 }
 
-fn backfill_orphan_i_start(
-    text: &str,
-    offsets: &[(usize, usize)],
-    special_mask: &[u32],
-    predictions_with_probs: &[(usize, f32)],
-    labels: &[String],
-    index: usize,
-) -> Option<usize> {
-    let (mut start, _) = token_bounds(text, offsets, index)?;
+fn backfill_orphan_i_start(view: &DecodeView<'_>, index: usize) -> Option<usize> {
+    let (mut start, _) = token_bounds(view.text, view.offsets, index)?;
     let mut left = index;
 
     while left > 0 {
         let prev = left - 1;
-        if special_mask[prev] != 0 {
+        if view.special_mask[prev] != 0 {
             break;
         }
 
-        let Some((prev_start, prev_end)) = token_bounds(text, offsets, prev) else {
+        let Some((prev_start, prev_end)) = token_bounds(view.text, view.offsets, prev) else {
             break;
         };
-        if prev_end != start || token_label(predictions_with_probs, labels, prev) != "O" {
+        if prev_end != start || token_label(view.predictions_with_probs, view.labels, prev) != "O" {
+            break;
+        }
+
+        if !is_continuation_subword(view.tokens[prev].as_str())
+            && !is_continuation_subword(view.tokens[left].as_str())
+        {
             break;
         }
 
@@ -591,5 +590,23 @@ mod tests {
                 span_with_score("PER", 7, 10, "Doe", 0.8),
             ]
         );
+    }
+
+    #[test]
+    fn orphan_i_backfill_stops_at_non_wordpiece_boundary() {
+        let text = "ADécimo";
+        let encoding = test_encoding(
+            &["A", "D", "##éc", "##imo"],
+            &[(0, 1), (1, 2), (2, 5), (5, 8)],
+        );
+        let predictions = vec![(0, 1.0), (0, 1.0), (0, 1.0), (2, 0.8)];
+        let labels = vec!["O", "B-PER", "I-PER"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
+
+        assert_eq!(entities, vec![span_with_score("PER", 1, 8, "Décimo", 0.8)]);
     }
 }

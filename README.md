@@ -42,10 +42,13 @@ Library:
 use std::path::Path;
 use tiktag::Tiktag;
 
-let mut tiktag = Tiktag::new(Path::new("models/profiles.toml"))?;
+let profiles_path = Path::new("/path/to/downloaded/models/profiles.toml");
+let mut tiktag = Tiktag::new(profiles_path)?;
 let out = tiktag.anonymize("Maria Garcia from OpenAI visited Berlin.")?;
 println!("{}", out.anonymization.anonymized_text);
 ```
+
+`Tiktag::new` takes an explicit `profiles_path`; `model_dir` resolves relative to that file's parent.
 
 ## CLI
 
