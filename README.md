@@ -1,6 +1,13 @@
 # tiktag
 
-Rust library + CLI for text anonymization. Ships a built-in multilingual NER model (`Xenova/distilbert-base-multilingual-cased-ner-hrl`, quantized ONNX).
+[![CI](https://github.com/agmxyz/tiktag/actions/workflows/ci.yml/badge.svg)](https://github.com/agmxyz/tiktag/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/tiktag.svg)](https://crates.io/crates/tiktag)
+[![docs.rs](https://docs.rs/tiktag/badge.svg)](https://docs.rs/tiktag)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+Rust library + CLI for text anonymization.
+
+`tiktag` uses a built-in ONNX NER model for `PERSON`, `ORG`, and `LOCATION`, then applies additive regex recognizers such as email.
 
 ## Install
 
@@ -8,7 +15,7 @@ Rust library + CLI for text anonymization. Ships a built-in multilingual NER mod
 cargo install tiktag
 ```
 
-Or build from source:
+Or from source:
 
 ```bash
 cargo install --path .
@@ -16,71 +23,61 @@ cargo install --path .
 
 ## Quickstart
 
+Download bundled model assets first:
+
 ```bash
 tiktag download
-tiktag "Maria Garcia from OpenAI visited Berlin."
+```
+
+CLI:
+
+```bash
+tiktag "Maria Garcia from OpenAI visited Berlin. Contact maria@example.com."
 echo "Maria Garcia from OpenAI visited Berlin." | tiktag --stdin --json
 ```
 
-## Library
+Library:
 
 ```rust
 use std::path::Path;
 use tiktag::Tiktag;
 
-let mut tiktag = Tiktag::new(Path::new("models/profiles.toml"))?;
+let profiles_path = Path::new("/path/to/downloaded/models/profiles.toml");
+let mut tiktag = Tiktag::new(profiles_path)?;
 let out = tiktag.anonymize("Maria Garcia from OpenAI visited Berlin.")?;
 println!("{}", out.anonymization.anonymized_text);
 ```
 
-- `Tiktag::new` loads tokenizer + ONNX session once (~350 ms).
-- `Tiktag::anonymize(&mut self, text)` reuses that state (ms-to-tens-of-ms). Wrap in a mutex to share across threads.
-- Both return `Result<_, TiktagError>`.
-- Placeholder numbering is stable within a single call; no cross-document identity.
+`Tiktag::new` takes an explicit `profiles_path`; `model_dir` resolves relative to that file's parent.
 
 ## CLI
 
-```bash
-tiktag "Maria Garcia from OpenAI visited Berlin."
-echo "Maria Garcia from OpenAI visited Berlin." | tiktag --stdin
-tiktag --stdin --json < file.txt
-tiktag --stdin --debug-json < file.txt  # reversible map; debug only
-tiktag download                         # fetch model assets
-```
-
-Flags: `--stdin`, `--json`, `--debug-json`, `--show-tokens`.
-
-The CLI resolves `models/profiles.toml` from an OS app-data directory first (`.../tiktag/models/profiles.toml`), then falls back to legacy locations (next to binary, then current working directory).
+- `tiktag "<text>"` prints anonymized text
+- `tiktag --stdin` reads input from stdin
+- `tiktag --json` emits safe machine-readable output
+- `tiktag --debug-json` emits reversible replacement metadata for local debugging only
+- `tiktag --show-tokens` prints per-token predictions to stderr
+- `tiktag download` fetches bundled model assets
 
 ## JSON
 
-`--json` fields: `schema_version`, `provenance`, `profile`, `anonymized_text`, `stats`.
-`stats.timings` varies by machine; pipelines that hash output should ignore it.
-Additive field changes keep `schema_version`; breaking changes bump it.
+- `--json` fields: `schema_version`, `provenance`, `profile`, `anonymized_text`, `stats`
+- `stats.timings` is machine-dependent; content-hash pipelines must ignore it
+- additive field changes keep `schema_version`; breaking changes bump it
 
-## Dev
+## Development
 
 ```bash
-just download         # fetch model assets
-just test             # unit + integration
-just test-fixtures    # end-to-end (requires assets)
-just bench            # criterion throughput harness
-just smoke-package    # release build + dist smoke
+just verify         # clippy + test
+just test-fixtures  # manual regression fixtures; requires downloaded assets
+just bench          # manual performance checks
+just smoke-package  # release packaging smoke check
 ```
 
-## Built-in profile
-
-Fixed config path: `models/profiles.toml`. `model_dir` resolves relative to the config directory.
-Optional recognizer toggles live under `[recognizers]` (for v1: `email = true|false`, default `true`).
-Required files under `model_dir`: `tokenizer.json`, `config.json`, `onnx/model_quantized.onnx`.
+Contributions are very welcome.
 
 ## Caveat
 
-Model-based anonymization can miss entities. Use `tiktag` as an assistive control, not your only compliance/safety gate.
+Model-based anonymization can miss entities. Treat `tiktag` as an assistive control, not a sole compliance or safety gate.
 
-## Model attribution
-
-- Model source: [`Xenova/distilbert-base-multilingual-cased-ner-hrl`](https://huggingface.co/Xenova/distilbert-base-multilingual-cased-ner-hrl)
-- Model license/terms: see model card on Hugging Face.
-
-See `AGENTS.md` for the authoritative contract and known footguns.
+See [AGENTS.md](AGENTS.md) for project contract and invariants.

@@ -2,9 +2,11 @@ use std::path::{Path, PathBuf};
 
 use crate::error::TiktagError;
 
+/// Relative file paths required in a valid model bundle directory.
 pub const REQUIRED_MODEL_FILES: &[&str] =
     &["tokenizer.json", "config.json", "onnx/model_quantized.onnx"];
 
+/// Returns required bundle files that are missing from `model_dir`.
 pub fn missing_model_files(model_dir: &Path) -> Vec<PathBuf> {
     REQUIRED_MODEL_FILES
         .iter()
@@ -13,6 +15,8 @@ pub fn missing_model_files(model_dir: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
+/// Validates that `model_dir` contains the files required by the built-in
+/// bundle layout.
 pub fn validate_model_bundle(model_dir: &Path) -> Result<(), TiktagError> {
     let missing = missing_model_files(model_dir);
     if missing.is_empty() {

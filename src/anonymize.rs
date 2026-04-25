@@ -21,10 +21,15 @@ use crate::error::TiktagError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+/// Placeholder family written into anonymized output.
 pub enum PlaceholderFamily {
+    /// Email address detected by the built-in regex recognizer.
     EmailAddress,
+    /// Person entity detected by the model.
     Person,
+    /// Organization entity detected by the model.
     Org,
+    /// Location entity detected by the model.
     Location,
 }
 
@@ -57,22 +62,36 @@ impl fmt::Display for PlaceholderFamily {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+/// One accepted replacement span in the original text.
 pub struct Replacement {
+    /// Start byte offset of the replaced span in the original input.
     pub start: usize,
+    /// End byte offset of the replaced span in the original input.
     pub end: usize,
+    /// Placeholder family assigned to this span.
     pub family: PlaceholderFamily,
+    /// Placeholder inserted into anonymized output, such as `[PERSON_1]`.
     pub placeholder: String,
+    /// Original literal text that was replaced.
     pub original: String,
+    /// Confidence attached to the accepted span.
     pub score: f32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+/// Complete anonymization payload for one input document.
 pub struct AnonymizationResult {
+    /// Input text with accepted spans rewritten to placeholders.
     pub anonymized_text: String,
+    /// Accepted replacements in byte order.
     pub replacements: Vec<Replacement>,
+    /// Reversible placeholder-to-original map for this document.
     pub placeholder_map: BTreeMap<String, String>,
+    /// Count of accepted replacements by placeholder family name.
     pub counts_by_family: BTreeMap<String, usize>,
+    /// Number of raw entity spans observed before filtering and overlap resolution.
     pub detected_entity_count: usize,
+    /// Number of replacements that survived filtering and overlap resolution.
     pub accepted_replacement_count: usize,
 }
 

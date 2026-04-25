@@ -1,13 +1,9 @@
-# set shell := ["sh", "-cu"]
-
 default:
     @just --list
 
-build:
-    cargo build
-
-check:
-    cargo check
+verify:
+    cargo clippy --all-targets --all-features -- -D warnings
+    cargo test
 
 clippy:
     cargo clippy --all-targets --all-features -- -D warnings
@@ -18,38 +14,14 @@ test:
 test-fixtures:
     cargo test fixture_regression -- --ignored --nocapture
 
-bench:
-    cargo bench
-
-fmt:
-    cargo fmt
-
-run text:
-    cargo run -- "{{ text }}"
-
-run-json text:
-    cargo run -- --json "{{ text }}"
-
-run-debug-json text:
-    cargo run -- --debug-json "{{ text }}"
-
-run-tokens text:
-    RUST_LOG=debug cargo run -- --show-tokens "{{ text }}"
-
-run-stdin:
-    cargo run -- --stdin
-
-run-json-stdin:
-    cargo run -- --stdin --json
-
-run-debug-json-stdin:
-    cargo run -- --stdin --debug-json
-
 sample:
-    cargo run -- "Maria Garcia from OpenAI visited Berlin. She can be reached at Maria@gmail.com"
+    cargo run -- "Me llamo Máximo Décimo Meridio. Comandante de los Ejércitos del norte de Roma, mi email es maximo@gmail.com. Fiel servidor del verdadero Emperador Marco Aurelio"
 
 download:
     cargo run -- download
+
+bench:
+    cargo bench
 
 package:
     cargo build --release
