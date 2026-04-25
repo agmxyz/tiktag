@@ -33,6 +33,7 @@ CLI:
 
 ```bash
 tiktag "Maria Garcia from OpenAI visited Berlin. Contact maria@example.com."
+tiktag "Me llamo Máximo Décimo Meridio. Comandante de los Ejércitos de Roma, contáctame maximo@example.com."
 echo "Maria Garcia from OpenAI visited Berlin." | tiktag --stdin --json
 ```
 
