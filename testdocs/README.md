@@ -1,22 +1,24 @@
 # Test Fixtures
 
-`testdocs/` now has two kinds of realistic synthetic inputs for built-in multilingual NER model.
+`testdocs/` has two kinds of synthetic inputs for built-in multilingual NER profile.
 
-Automated regression fixtures:
+## Stable regression fixtures
 
-- `xenova_ner_windowed_*`: medium-size synthetic dossier that should force multi-window inference and verify stable placeholder reuse for person, org, and location entities.
-- `xenova_ner_stress_windowed_*`: larger bundle that pushes repeated entity values across deep sliding-window inference.
+- `xenova_ner_windowed_*`: medium input that forces multi-window inference
+- `xenova_ner_stress_windowed_*`: larger input that pushes repeated values across deeper sliding-window inference
 
-These expected manifests focus on anonymization behavior:
+These fixtures assert only:
 
 - anonymized text contains expected placeholders
-- repeated exact values reuse the same placeholder
-- source literals used in the stable fixture set do not remain in anonymized output
-- long inputs still produce multiple windows and stable total timing metadata
+- repeated exact values reuse same placeholder
+- source literals listed in fixture manifests do not remain in anonymized output
+- long inputs still produce at least the expected minimum window count
 
-Exploratory manual probes:
+Fixture placeholder ids and replacement counts are pinned to current built-in model/profile. Treat them as regression guards for this repo, not as cross-model guarantees.
+
+## Exploratory probes
 
 - `xenova_ner_hard_probe_input.md`
 - `xenova_ner_hard_stress_input.md`
 
-The hard probes intentionally include entity shapes current model may miss, including emails, URLs, IPs, IDs, addresses, and bank data. They are useful for characterizing current model behavior, but they are not treated as stable pass/fail regression fixtures yet.
+These probe entity shapes current model may miss, including emails, URLs, IPs, IDs, addresses, and bank data. Keep them for manual characterization; they are not stable pass/fail fixtures.

@@ -1,5 +1,6 @@
 // Post-processing: turns raw ONNX logits into merged entity spans for the
-// built-in Xenova DistilBERT NER model. Merge rules are strict BIO only.
+// built-in Xenova DistilBERT NER model. Merge rules stay mostly strict BIO,
+// with conservative repair for obvious malformed subword runs.
 
 use std::borrow::Cow;
 
@@ -52,6 +53,9 @@ pub fn argmax_label_indices_with_probs(logits: ArrayView3<'_, f32>) -> Vec<(usiz
 
 /// Walk token predictions and merge adjacent tokens into entity spans.
 /// Skips special tokens ([CLS]/[SEP]), invalid offsets, and non-BIO labels.
+/// Also repairs two obvious malformed BIO cases:
+/// - orphan `I-*` continuation subwords
+/// - single-word `O` glitches inside an otherwise continuous same-family span
 pub fn decode_entities(
     text: &str,
     encoding: &Encoding,
@@ -60,36 +64,62 @@ pub fn decode_entities(
 ) -> Vec<EntitySpan> {
     let special_mask = encoding.get_special_tokens_mask();
     let offsets = encoding.get_offsets();
+    let tokens = encoding.get_tokens();
     let upper = predictions_with_probs
         .len()
         .min(offsets.len())
-        .min(special_mask.len());
+        .min(special_mask.len())
+        .min(tokens.len());
 
     let mut entities = Vec::new();
     let mut current: Option<EntitySpan> = None;
+    let mut index = 0usize;
 
-    for index in 0..upper {
+    while index < upper {
         if special_mask[index] != 0 {
             flush_entity(&mut current, &mut entities);
+            index += 1;
             continue;
         }
 
-        let (start, end) = offsets[index];
-        if start >= end || end > text.len() || text.get(start..end).is_none() {
+        let Some((start, end)) = token_bounds(text, offsets, index) else {
             flush_entity(&mut current, &mut entities);
+            index += 1;
             continue;
-        }
+        };
 
         let (label_idx, token_prob) = predictions_with_probs[index];
         let label = labels.get(label_idx).map(String::as_str).unwrap_or("O");
 
         if label == "O" {
+            if let Some(entity) = current.as_mut()
+                && let Some((resume_index, repaired_end)) = repair_intra_word_o_glitch(
+                    text,
+                    tokens,
+                    offsets,
+                    special_mask,
+                    predictions_with_probs,
+                    labels,
+                    entity,
+                    index,
+                    upper,
+                )
+            {
+                entity.end = repaired_end;
+                if let Some(span_text) = text.get(entity.start..entity.end) {
+                    entity.text = span_text.to_owned();
+                }
+                index = resume_index;
+                continue;
+            }
             flush_entity(&mut current, &mut entities);
+            index += 1;
             continue;
         }
 
         let Some((prefix, kind)) = split_bio_label(label) else {
             flush_entity(&mut current, &mut entities);
+            index += 1;
             continue;
         };
 
@@ -103,14 +133,29 @@ pub fn decode_entities(
             .map(str::to_owned);
 
         if current.is_none() || merge_label.is_none() {
+            let repaired_start = if prefix == "I" && is_continuation_subword(tokens[index].as_str())
+            {
+                backfill_orphan_i_start(
+                    text,
+                    offsets,
+                    special_mask,
+                    predictions_with_probs,
+                    labels,
+                    index,
+                )
+                .unwrap_or(start)
+            } else {
+                start
+            };
             flush_entity(&mut current, &mut entities);
             current = Some(EntitySpan {
                 label: Cow::Owned(kind.to_owned()),
-                start,
+                start: repaired_start,
                 end,
-                text: text.get(start..end).unwrap_or("").to_owned(),
+                text: text.get(repaired_start..end).unwrap_or("").to_owned(),
                 score: token_prob,
             });
+            index += 1;
             continue;
         }
 
@@ -124,6 +169,8 @@ pub fn decode_entities(
             }
             entity.score = entity.score.min(token_prob);
         }
+
+        index += 1;
     }
 
     flush_entity(&mut current, &mut entities);
@@ -147,6 +194,125 @@ fn flush_entity(current: &mut Option<EntitySpan>, entities: &mut Vec<EntitySpan>
     if let Some(entity) = current.take() {
         entities.push(entity);
     }
+}
+
+fn token_bounds(text: &str, offsets: &[(usize, usize)], index: usize) -> Option<(usize, usize)> {
+    let (start, end) = offsets.get(index).copied()?;
+    if start >= end || end > text.len() || text.get(start..end).is_none() {
+        return None;
+    }
+    Some((start, end))
+}
+
+fn token_label<'a>(
+    predictions_with_probs: &[(usize, f32)],
+    labels: &'a [String],
+    index: usize,
+) -> &'a str {
+    let (label_idx, _) = predictions_with_probs
+        .get(index)
+        .copied()
+        .unwrap_or((0, 0.0));
+    labels.get(label_idx).map(String::as_str).unwrap_or("O")
+}
+
+fn is_continuation_subword(token: &str) -> bool {
+    token.starts_with("##")
+}
+
+fn repair_intra_word_o_glitch(
+    text: &str,
+    tokens: &[String],
+    offsets: &[(usize, usize)],
+    special_mask: &[u32],
+    predictions_with_probs: &[(usize, f32)],
+    labels: &[String],
+    current: &EntitySpan,
+    index: usize,
+    upper: usize,
+) -> Option<(usize, usize)> {
+    if !is_continuation_subword(tokens.get(index)?.as_str()) {
+        return None;
+    }
+
+    let (start, end) = token_bounds(text, offsets, index)?;
+    if start != current.end || token_label(predictions_with_probs, labels, index) != "O" {
+        return None;
+    }
+
+    let mut run_end = end;
+    let mut scan = index;
+    while scan < upper {
+        if special_mask[scan] != 0 {
+            break;
+        }
+
+        let Some((scan_start, scan_end)) = token_bounds(text, offsets, scan) else {
+            break;
+        };
+        if scan_start != run_end.min(scan_start)
+            || scan_start != if scan == index { current.end } else { run_end }
+        {
+            break;
+        }
+
+        if token_label(predictions_with_probs, labels, scan) != "O"
+            || !is_continuation_subword(tokens[scan].as_str())
+        {
+            break;
+        }
+
+        run_end = scan_end;
+        scan += 1;
+    }
+
+    if scan >= upper || special_mask[scan] != 0 {
+        return None;
+    }
+
+    let (next_start, _) = token_bounds(text, offsets, scan)?;
+    if next_start != run_end {
+        return None;
+    }
+
+    let next_label = token_label(predictions_with_probs, labels, scan);
+    let (prefix, kind) = split_bio_label(next_label)?;
+    if prefix != "I" || kind != current.label.as_ref() {
+        return None;
+    }
+
+    Some((scan, run_end))
+}
+
+fn backfill_orphan_i_start(
+    text: &str,
+    offsets: &[(usize, usize)],
+    special_mask: &[u32],
+    predictions_with_probs: &[(usize, f32)],
+    labels: &[String],
+    index: usize,
+) -> Option<usize> {
+    let (mut start, _) = token_bounds(text, offsets, index)?;
+    let mut left = index;
+
+    while left > 0 {
+        let prev = left - 1;
+        if special_mask[prev] != 0 {
+            break;
+        }
+
+        let Some((prev_start, prev_end)) = token_bounds(text, offsets, prev) else {
+            break;
+        };
+        if prev_end != start || token_label(predictions_with_probs, labels, prev) != "O" {
+            break;
+        }
+
+        start = prev_start;
+        left = prev;
+    }
+
+    Some(start)
 }
 
 /// Decide if the next token should merge into the current entity span.
@@ -205,6 +371,22 @@ mod tests {
             end,
             text: text.to_owned(),
             score: 1.0,
+        }
+    }
+
+    fn span_with_score(
+        label: &str,
+        start: usize,
+        end: usize,
+        text: &str,
+        score: f32,
+    ) -> EntitySpan {
+        EntitySpan {
+            label: Cow::Owned(label.to_owned()),
+            start,
+            end,
+            text: text.to_owned(),
+            score,
         }
     }
 
@@ -334,5 +516,80 @@ mod tests {
 
         assert_eq!(entities.len(), 1);
         assert!((entities[0].score - 0.6).abs() < 1e-6);
+    }
+
+    #[test]
+    fn repairs_intra_word_o_glitch_across_same_entity_subwords() {
+        let text = "Máximo Décimo Meridio";
+        let encoding = test_encoding(
+            &["Má", "##ximo", "D", "##éc", "##imo", "Mer", "##idi", "##o"],
+            &[
+                (0, 3),
+                (3, 7),
+                (8, 9),
+                (9, 12),
+                (12, 15),
+                (16, 19),
+                (19, 22),
+                (22, 23),
+            ],
+        );
+        let predictions = vec![
+            (1, 0.9),
+            (2, 0.8),
+            (2, 0.7),
+            (0, 0.01),
+            (2, 0.6),
+            (2, 0.95),
+            (2, 0.97),
+            (2, 0.99),
+        ];
+        let labels = vec!["O", "B-PER", "I-PER"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
+
+        assert_eq!(
+            entities,
+            vec![span_with_score("PER", 0, 23, "Máximo Décimo Meridio", 0.6)]
+        );
+    }
+
+    #[test]
+    fn backfills_orphan_i_continuation_to_same_word_start() {
+        let text = "Décimo";
+        let encoding = test_encoding(&["D", "##éc", "##imo"], &[(0, 1), (1, 4), (4, 7)]);
+        let predictions = vec![(0, 1.0), (0, 1.0), (2, 0.8)];
+        let labels = vec!["O", "B-PER", "I-PER"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
+
+        assert_eq!(entities, vec![span_with_score("PER", 0, 7, "Décimo", 0.8)]);
+    }
+
+    #[test]
+    fn does_not_bridge_o_gap_across_whitespace() {
+        let text = "John X Doe";
+        let encoding = test_encoding(&["John", "X", "Doe"], &[(0, 4), (5, 6), (7, 10)]);
+        let predictions = vec![(1, 0.9), (0, 1.0), (2, 0.8)];
+        let labels = vec!["O", "B-PER", "I-PER"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+
+        let entities = decode_entities(text, &encoding, &predictions, &labels);
+
+        assert_eq!(
+            entities,
+            vec![
+                span_with_score("PER", 0, 4, "John", 0.9),
+                span_with_score("PER", 7, 10, "Doe", 0.8),
+            ]
+        );
     }
 }

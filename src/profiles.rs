@@ -9,20 +9,30 @@ use serde::Deserialize;
 
 use crate::error::TiktagError;
 
+/// Logical name of the built-in bundled profile.
 pub const BUILTIN_PROFILE_NAME: &str = "distilbert_ner_hrl";
 
 /// The built-in model config after validation and path resolution.
 #[derive(Debug, Clone)]
 pub struct ResolvedProfile {
+    /// Logical profile name used by the library and CLI output.
     pub name: String,
+    /// Hugging Face repo identifier for the bundled model.
     pub hf_repo: String,
+    /// Resolved filesystem path to the model directory.
     pub model_dir: PathBuf,
+    /// Maximum token count allowed by the profile.
     pub max_tokens: usize,
+    /// Overlap between adjacent sliding windows.
     pub overlap_tokens: usize,
+    /// Whether the built-in email recognizer is enabled.
     pub email_recognizer: bool,
 }
 
-/// Parsed internal config. Holds the base directory for resolving relative model_dir paths.
+/// Parsed built-in profile configuration before resolution.
+///
+/// This type is mainly useful for advanced callers that want to validate or
+/// inspect the bundled profile settings before constructing [`crate::Tiktag`].
 #[derive(Debug)]
 pub struct Profiles {
     base_dir: PathBuf,
@@ -67,6 +77,7 @@ fn default_true() -> bool {
 }
 
 impl Profiles {
+    /// Loads and validates the built-in profile file from disk.
     pub fn load(path: &Path) -> Result<Self, TiktagError> {
         let raw_text = fs::read_to_string(path).map_err(|source| TiktagError::ProfileRead {
             path: path.to_path_buf(),
@@ -88,6 +99,7 @@ impl Profiles {
         Self::validate_raw(&base_dir, raw).map_err(TiktagError::ProfileInvalid)
     }
 
+    /// Resolves the single built-in profile into absolute runtime settings.
     pub fn resolve_default(&self) -> ResolvedProfile {
         ResolvedProfile {
             name: BUILTIN_PROFILE_NAME.to_owned(),
