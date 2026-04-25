@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.3] - 2026-04-26
+
+### Added
+- Built-in email recognizer as an additive supplement to model-based entity detection.
+
+### Fixed
+- Decoder now repairs malformed subword BIO output to avoid visibly corrupted replacements on broken multilingual name spans.
+
+### Changed
+- Library docs and README examples now make the explicit `profiles.toml` path requirement clearer.
+
 ## [0.1.2] - 2026-04-23
 
 ### Fixed
