@@ -16,6 +16,7 @@ mod decode;
 mod error;
 mod model_bundle;
 mod profiles;
+mod recognizers;
 mod runtime;
 mod window;
 
@@ -53,7 +54,13 @@ impl Tiktag {
 
     pub fn anonymize(&mut self, text: &str) -> Result<TiktagOutput, TiktagError> {
         let inference = self.runtime.infer(text)?;
-        let anonymization = anonymize::anonymize(text, &inference.entities)?;
+        let mut entities = inference.entities;
+        // Keep this sequential for simplicity; if profiling shows need, regex recognizers can
+        // run in parallel with inference prep and merge here with the same overlap rules.
+        if self.profile.email_recognizer {
+            entities.extend(recognizers::email::detect(text));
+        }
+        let anonymization = anonymize::anonymize(text, &entities)?;
 
         Ok(TiktagOutput {
             anonymization,

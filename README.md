@@ -71,6 +71,7 @@ just smoke-package    # release build + dist smoke
 ## Built-in profile
 
 Fixed config path: `models/profiles.toml`. `model_dir` resolves relative to the config directory.
+Optional recognizer toggles live under `[recognizers]` (for v1: `email = true|false`, default `true`).
 Required files under `model_dir`: `tokenizer.json`, `config.json`, `onnx/model_quantized.onnx`.
 
 ## Caveat
