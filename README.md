@@ -9,6 +9,8 @@ Rust library + CLI for text anonymization. Use it to redact logs, prompts, ticke
 
 `tiktag` uses a built-in ONNX NER model for `PERSON`, `ORG`, and `LOCATION`, then applies additive regex recognizers such as email.
 
+Built-in model: [Xenova/distilbert-base-multilingual-cased-ner-hrl](https://huggingface.co/Xenova/distilbert-base-multilingual-cased-ner-hrl) (quantized ONNX)
+
 ## Install
 
 ```bash
