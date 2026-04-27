@@ -5,7 +5,7 @@
 [![docs.rs](https://docs.rs/tiktag/badge.svg)](https://docs.rs/tiktag)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Rust library + CLI for text anonymization.
+Rust library + CLI for text anonymization. Use it to redact logs, prompts, tickets, and exports.
 
 `tiktag` uses a built-in ONNX NER model for `PERSON`, `ORG`, and `LOCATION`, then applies additive regex recognizers such as email.
 
@@ -32,9 +32,24 @@ tiktag download
 CLI:
 
 ```bash
-tiktag "Maria Garcia from OpenAI visited Berlin. Contact maria@example.com."
 tiktag "Me llamo Máximo Décimo Meridio. Comandante de los Ejércitos de Roma, contáctame maximo@example.com."
 echo "Maria Garcia from OpenAI visited Berlin." | tiktag --stdin --json
+```
+
+Output example (excerpt):
+
+```bash
+$ tiktag --json "Me llamo Máximo Décimo Meridio. Comandante de los Ejércitos de Roma, contáctame maximo@example.com."
+```
+
+```json
+{
+  "anonymized_text": "Me llamo [PERSON_1]. Comandante de los Ejércitos de [LOCATION_1], contáctame [EMAIL_ADDRESS_1].",
+  "stats": {
+    "detected_entity_count": 3,
+    "accepted_replacement_count": 3
+  }
+}
 ```
 
 Library:
@@ -45,7 +60,7 @@ use tiktag::Tiktag;
 
 let profiles_path = Path::new("/path/to/downloaded/models/profiles.toml");
 let mut tiktag = Tiktag::new(profiles_path)?;
-let out = tiktag.anonymize("Maria Garcia from OpenAI visited Berlin.")?;
+let out = tiktag.anonymize("Text to anonymize.")?;
 println!("{}", out.anonymization.anonymized_text);
 ```
 
