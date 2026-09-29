@@ -68,6 +68,27 @@ println!("{}", out.anonymization.anonymized_text);
 
 `Tiktag::new` takes an explicit `profiles_path`; `model_dir` resolves relative to that file's parent.
 
+## Performance
+
+Baseline warm `anonymize` latency with the built-in quantized model on Apple
+M2 Pro (macOS 26.6.2, arm64), Rust 1.88 release build, native ONNX Runtime
+1.24.2. Each synthetic fixture ran in three fresh processes with 30 warm calls
+per process after five warmups; values pool 90 calls and report p50/p95 in ms.
+
+| Fixture | Input tokens (including special) | Windows | p50 / p95 (ms) |
+| --- | ---: | ---: | ---: |
+| short | 10 | 1 | 3.720 / 4.098 |
+| near limit | 503 | 1 | 67.250 / 70.735 |
+| multi-window | 1,586 | 4 | 280.222 / 314.346 |
+
+`Tiktag::new` initialization medians: 340.411 ms (short), 376.830 ms (near
+limit), 333.992 ms (four-window); excluded above. Reuse one `Tiktag` in
+long-lived hosts; each CLI invocation pays initialization. The macOS build
+registered CoreML with CPU fallback; provider placement can vary. Linux is
+unmeasured. These synthetic results are not a performance guarantee. See the
+[full report](docs/performance-report.md) for limitations, correctness findings,
+raw results, and reproduction steps.
+
 ## CLI
 
 - `tiktag "<text>"` prints anonymized text
