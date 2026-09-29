@@ -1,0 +1,130 @@
+{
+  "name": "multi_window",
+  "text": "the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the Alice Morgan works at Microsoft in Paris. the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the Alice Morgan works at Microsoft in Paris. the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the Alice Morgan works at Microsoft in Paris. the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the Alice Morgan works at Microsoft in Paris. the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the Alice Morgan works at Microsoft in Paris. the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the Alice Morgan works at Microsoft in Paris. the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the Alice Morgan works at Microsoft in Paris. the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the Alice Morgan works at Microsoft in Paris. ",
+  "expected": [
+    {
+      "start": 760,
+      "end": 772,
+      "family": "PERSON"
+    },
+    {
+      "start": 782,
+      "end": 791,
+      "family": "ORG"
+    },
+    {
+      "start": 795,
+      "end": 800,
+      "family": "LOCATION"
+    },
+    {
+      "start": 1562,
+      "end": 1574,
+      "family": "PERSON"
+    },
+    {
+      "start": 1584,
+      "end": 1593,
+      "family": "ORG"
+    },
+    {
+      "start": 1597,
+      "end": 1602,
+      "family": "LOCATION"
+    },
+    {
+      "start": 2364,
+      "end": 2376,
+      "family": "PERSON"
+    },
+    {
+      "start": 2386,
+      "end": 2395,
+      "family": "ORG"
+    },
+    {
+      "start": 2399,
+      "end": 2404,
+      "family": "LOCATION"
+    },
+    {
+      "start": 3166,
+      "end": 3178,
+      "family": "PERSON"
+    },
+    {
+      "start": 3188,
+      "end": 3197,
+      "family": "ORG"
+    },
+    {
+      "start": 3201,
+      "end": 3206,
+      "family": "LOCATION"
+    },
+    {
+      "start": 3968,
+      "end": 3980,
+      "family": "PERSON"
+    },
+    {
+      "start": 3990,
+      "end": 3999,
+      "family": "ORG"
+    },
+    {
+      "start": 4003,
+      "end": 4008,
+      "family": "LOCATION"
+    },
+    {
+      "start": 4770,
+      "end": 4782,
+      "family": "PERSON"
+    },
+    {
+      "start": 4792,
+      "end": 4801,
+      "family": "ORG"
+    },
+    {
+      "start": 4805,
+      "end": 4810,
+      "family": "LOCATION"
+    },
+    {
+      "start": 5572,
+      "end": 5584,
+      "family": "PERSON"
+    },
+    {
+      "start": 5594,
+      "end": 5603,
+      "family": "ORG"
+    },
+    {
+      "start": 5607,
+      "end": 5612,
+      "family": "LOCATION"
+    },
+    {
+      "start": 6374,
+      "end": 6386,
+      "family": "PERSON"
+    },
+    {
+      "start": 6396,
+      "end": 6405,
+      "family": "ORG"
+    },
+    {
+      "start": 6409,
+      "end": 6414,
+      "family": "LOCATION"
+    }
+  ],
+  "min_tokens": 1550,
+  "max_tokens": 1800,
+  "windows": 4,
+  "crosses_first_window": false
+}

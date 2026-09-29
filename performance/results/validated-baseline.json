@@ -1,0 +1,6048 @@
+{
+  "schema_version": 2,
+  "status": "complete",
+  "label": "validated-baseline",
+  "created_utc": "2026-09-29T14:48:21Z",
+  "command": [
+    "scripts/benchmark.py",
+    "--output",
+    "performance/results/validated-baseline.json",
+    "--label",
+    "validated-baseline"
+  ],
+  "git_commit": "1f09449b2227a030bf4a6fbb2861014d64081c26",
+  "source_hashes": {
+    "Cargo.lock": "2d65083e72227af0eb3919e965def8d2fec4881374885d050f505eb92253a61b",
+    "Cargo.toml": "f02b15020357e4f0f480502f32e19445ce69888f35d911a18559530bf72dce4a",
+    "benches/anonymize.rs": "9307c4da941995103bdbb7873081d3580e1fb2f33ca5866df15c3f6018c80f11",
+    "examples/pipeline_bench.rs": "0a36b1014c72f5aeb64ed9d3d8d6fee6da80d17def140cba694eeb5d1f7fadf0",
+    "scripts/benchmark.py": "67999a8c4114246293aa3db58c4efabfc1b6483dd476ff32ac2859135ef2ebf6",
+    "src/anonymize.rs": "4a5baa93d3528ed88d5975e98dd35c69e44bdbfb858e65409d5041cd51a7cdce",
+    "src/cli.rs": "c406717481a0f15abacde95bde3a1fae532ee34af9bff811beba327d272cec6d",
+    "src/decode.rs": "92e180694872391d08a5205a3839b444196a3767a53330fd8543513151e34120",
+    "src/download.rs": "743ab15fa4f02d9e6a4b2e6780fda7dc93036584b1f45abe9603104c363dab4a",
+    "src/error.rs": "252b7be2142a866cd606e7c8a56360dc528210ff5525d8a9b198359276fccb50",
+    "src/fixture_tests.rs": "fa8911a31d2fe0ad38ad43e2456a41a869e56d1d3204e8dad708fb4f5605fe94",
+    "src/lib.rs": "411eebb5958eedaf71dcc0b8ffe1f8e96e053816a7e5f7789c1ad4852ab6117c",
+    "src/main.rs": "fb18a4ec6652a9ee6e2d04cbe8a433bb7299c448be8cc13c3765b226788fb8cb",
+    "src/measurement.rs": "9bcfc3f85318d72440023afaed6a939179eebebd5d9c5c435c6d8ced7694e1a1",
+    "src/model_bundle.rs": "ae364a4f4485efe92d4fcb898d1d6fe418566d7aea74902a2048bb2bca1e2fa5",
+    "src/profiles.rs": "c9dc9687af29daff3451672c0342ff8ca461fb9493cf1595f51ebe03da18ede9",
+    "src/recognizers/email.rs": "a442b14b8740dbe2f6ec1f81bfca57784199d9ff3a1f96eab8c915a6937178bd",
+    "src/recognizers/mod.rs": "d5922fe408257bb36f8069619e09ebb65a8dc363959d51eae2fe39c39796596b",
+    "src/runtime.rs": "fabe57eb554e309ff78736c8861c2c8eb13604d2808eb2820f3c117f9e88fa6e",
+    "src/window.rs": "92487b9274f58c160ed80defb90e74b7a0bee1c28075978dd3fcda45e04d80e4"
+  },
+  "source_snapshot_sha256": "aaa452bd0a7068c4339c55ff73ae3876327396135e79bf2024f918dd2bd8f056",
+  "binary_sha256": "a8c1c82ed4a4d981dea7bfcf488f7542f5c1a723e6cb289e786bade5023ec155",
+  "binary_path": "/Users/mmo/fun/agm/tiktag/target/release/examples/pipeline_bench",
+  "rustc": "rustc 1.88.0 (6b00bc388 2025-06-23)\nbinary: rustc\ncommit-hash: 6b00bc3880198600130e1cf62b8f8a93494488cc\ncommit-date: 2025-06-23\nhost: aarch64-apple-darwin\nrelease: 1.88.0\nLLVM version: 20.1.5",
+  "rustc_target": "aarch64-apple-darwin",
+  "cargo_version": "cargo 1.88.0 (873a06493 2025-05-10)",
+  "os": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "hardware": "Apple M2 Pro\n17179869184\n10",
+  "build_settings": {
+    "command": [
+      "cargo",
+      "build",
+      "--locked",
+      "--release",
+      "--features",
+      "profiling",
+      "--example",
+      "pipeline_bench"
+    ],
+    "profile": "release",
+    "features": [
+      "profiling"
+    ],
+    "target_override": null,
+    "cargo_target_dir": null
+  },
+  "build_stderr_file": "validated-baseline.build.stderr.txt",
+  "cargo_lock_sha256": "2d65083e72227af0eb3919e965def8d2fec4881374885d050f505eb92253a61b",
+  "profile_sha256": "8a5ccbf017010aa67c1a3547d6e4f932b7cb6516ef23e06705c6732af2928654",
+  "model_hashes": {
+    "config.json": "38847be4dc6699b1218a749ed69f888c2ccc7b4deba98e3c4a1cac8cb34d54c8",
+    "tokenizer.json": "bf1b59b7b11c95f194f51708d918eea378e09d05f84c0e1656dc5180e8117088",
+    "onnx/model_quantized.onnx": "24a0b98f4dd4cd92842f5a541272f86f760225a64a29928eddef14bdb2edb986"
+  },
+  "model_bytes": {
+    "config.json": 927,
+    "tokenizer.json": 2919362,
+    "onnx/model_quantized.onnx": 135359829
+  },
+  "registered_provider": "CoreML with CPU fallback",
+  "thread_settings": {
+    "intra_op": "ORT default (0)",
+    "inter_op": "ORT default",
+    "execution": "sequential",
+    "graph_optimization": "Level3"
+  },
+  "environment": {
+    "CARGO_BUILD_TARGET": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "CARGO_INCREMENTAL": null,
+    "CARGO_TARGET_DIR": null,
+    "DYLD_INSERT_LIBRARIES": null,
+    "DYLD_LIBRARY_PATH": null,
+    "LD_LIBRARY_PATH": null,
+    "LD_PRELOAD": null,
+    "MKL_NUM_THREADS": null,
+    "OMP_NUM_THREADS": null,
+    "OPENBLAS_NUM_THREADS": null,
+    "ORT_DYLIB_PATH": null,
+    "ORT_LOG_LEVEL": null,
+    "RAYON_NUM_THREADS": null,
+    "RUSTC": null,
+    "RUSTC_WORKSPACE_WRAPPER": null,
+    "RUSTC_WRAPPER": null,
+    "RUSTFLAGS": null,
+    "RUST_LOG": "warn",
+    "TOKENIZERS_PARALLELISM": null
+  },
+  "rss_method": "/usr/bin/time child high-water RSS; ps snapshots are current RSS; bytes",
+  "fixtures": {
+    "boundary": "3344f07fe242c28ad717e6527587119ca52b185838f81ad6b0cf9579b11156be",
+    "multi_window": "f73d10ae82485b1d4bcb6af514c0ef66bbd923ec9b53aeb1e30b0bb849267b57",
+    "near_limit": "e8601b525f61f44f37e5291ef49ff935db3f573c82cc16dda9c418714adbff88",
+    "no_entity": "f93293407e5d934f37147030881fb7f7eba8d41a4e4fbed00ae61aa6722c8e31",
+    "short": "038b591e3ea8c291730d6ce111e70bf44e4bf2b9d4dadd43514a2124aa4f8906",
+    "unicode_repeated": "4ce916fc9caff0f3856fdbdfa747f42387a5e3395229e87e571ccf8fa380aa12"
+  },
+  "samples": 30,
+  "warmup": 5,
+  "stage_samples": 5,
+  "repeats": 3,
+  "native_profiling": false,
+  "runs": [
+    {
+      "confidence": [
+        {
+          "end": 2048,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.9967755675315857,
+          "start": 2036
+        },
+        {
+          "end": 2062,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9992377758026123,
+          "start": 2057
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 140.248959,
+      "fixture": "boundary",
+      "fixture_sha256": "3344f07fe242c28ad717e6527587119ca52b185838f81ad6b0cf9579b11156be",
+      "initialization": {
+        "session_ms": 357.542542,
+        "tokenizer_ms": 52.6625,
+        "total_ms": 410.57687500000003
+      },
+      "input_bytes": 2464,
+      "input_tokens_including_special": 616,
+      "median_ms": 113.430875,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 129.575125,
+      "processed_tokens_including_overlap_and_special": 746,
+      "quality": {
+        "actual": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "start": 2057
+          }
+        ],
+        "exact_matches": 2,
+        "expected": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "start": 2057
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 502595584,
+        "initialized": 400162816,
+        "warm": 513703936
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "3cc29ea5ea492c3755099011b463da0e9b34b4fd97ab3e782d2a2a99fa81c111",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2057
+          }
+        ],
+        "sequence_len": 616,
+        "windows": 2
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.024375,
+          "masking_ms": 0.006334,
+          "model_execution_ms": 98.651292,
+          "recognizers_ms": 0.0012920000000000002,
+          "stitching_ms": 0.011542,
+          "tensor_preparation_ms": 0.001417,
+          "tokenization_ms": 0.475375,
+          "total_ms": 108.52575,
+          "window_preparation_ms": 6.6373750000000005
+        },
+        {
+          "decoding_ms": 0.020292,
+          "masking_ms": 0.007625,
+          "model_execution_ms": 98.182458,
+          "recognizers_ms": 0.00175,
+          "stitching_ms": 0.007333,
+          "tensor_preparation_ms": 0.001375,
+          "tokenization_ms": 0.490167,
+          "total_ms": 108.17858299999999,
+          "window_preparation_ms": 6.640375
+        },
+        {
+          "decoding_ms": 0.020791999999999998,
+          "masking_ms": 0.007125,
+          "model_execution_ms": 98.358792,
+          "recognizers_ms": 0.001333,
+          "stitching_ms": 0.007416,
+          "tensor_preparation_ms": 0.001416,
+          "tokenization_ms": 0.48258300000000004,
+          "total_ms": 108.2635,
+          "window_preparation_ms": 6.7285
+        },
+        {
+          "decoding_ms": 0.022208,
+          "masking_ms": 0.007125,
+          "model_execution_ms": 98.067959,
+          "recognizers_ms": 0.001625,
+          "stitching_ms": 0.011083000000000003,
+          "tensor_preparation_ms": 0.001459,
+          "tokenization_ms": 0.479,
+          "total_ms": 107.86925,
+          "window_preparation_ms": 6.648041
+        },
+        {
+          "decoding_ms": 0.022917,
+          "masking_ms": 0.006667,
+          "model_execution_ms": 97.616791,
+          "recognizers_ms": 0.00125,
+          "stitching_ms": 0.007457999999999999,
+          "tensor_preparation_ms": 0.001584,
+          "tokenization_ms": 0.464166,
+          "total_ms": 107.348,
+          "window_preparation_ms": 6.571958
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 8.577122960120896,
+        "input_bytes_per_second": 21134.030973737885,
+        "input_tokens_per_second": 5283.507743434471
+      },
+      "trace_path": null,
+      "warm_ms": [
+        113.52624999999999,
+        125.71908400000001,
+        110.065458,
+        113.993167,
+        115.027042,
+        108.8715,
+        109.94775,
+        108.054,
+        109.685291,
+        115.77787500000001,
+        113.53725,
+        172.104084,
+        126.54525,
+        118.74650000000001,
+        120.25450000000001,
+        118.25616699999999,
+        113.33550000000001,
+        112.324208,
+        116.756875,
+        111.80904199999999,
+        129.575125,
+        126.954833,
+        112.864041,
+        115.67070799999999,
+        109.395875,
+        112.808375,
+        110.748834,
+        109.659542,
+        107.81475,
+        107.847459
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2041,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 2,
+      "peak_rss_bytes": 537411584,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 113.430875,
+        "measured_stage_total_median_ms": 108.17858299999999,
+        "delta_ms": -5.252292000000011,
+        "delta_percent": -4.6303900944077325,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 0,
+      "stderr_file": "validated-baseline-0-boundary.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 772,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.8861898183822632,
+          "start": 760
+        },
+        {
+          "end": 791,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9798853993415833,
+          "start": 782
+        },
+        {
+          "end": 800,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998626708984375,
+          "start": 795
+        },
+        {
+          "end": 1574,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9810609817504883,
+          "start": 1562
+        },
+        {
+          "end": 1593,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.966045081615448,
+          "start": 1584
+        },
+        {
+          "end": 1602,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.999849796295166,
+          "start": 1597
+        },
+        {
+          "end": 2376,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9131879806518555,
+          "start": 2364
+        },
+        {
+          "end": 2395,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9119876027107239,
+          "start": 2386
+        },
+        {
+          "end": 2404,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9997257590293884,
+          "start": 2399
+        },
+        {
+          "end": 3178,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.7199178338050842,
+          "start": 3166
+        },
+        {
+          "end": 3197,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9740678668022156,
+          "start": 3188
+        },
+        {
+          "end": 3206,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9996525049209595,
+          "start": 3201
+        },
+        {
+          "end": 3980,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.563504695892334,
+          "start": 3968
+        },
+        {
+          "end": 3999,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_2]",
+          "score": 0.9237555265426636,
+          "start": 3990
+        },
+        {
+          "end": 4008,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998427629470825,
+          "start": 4003
+        },
+        {
+          "end": 4782,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.8987553119659424,
+          "start": 4770
+        },
+        {
+          "end": 4801,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.7987143993377686,
+          "start": 4792
+        },
+        {
+          "end": 4810,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9997755885124207,
+          "start": 4805
+        },
+        {
+          "end": 5584,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9725075364112854,
+          "start": 5572
+        },
+        {
+          "end": 5603,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9948508143424988,
+          "start": 5594
+        },
+        {
+          "end": 5612,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998366832733154,
+          "start": 5607
+        },
+        {
+          "end": 6386,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.720318615436554,
+          "start": 6374
+        },
+        {
+          "end": 6405,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9984013438224792,
+          "start": 6396
+        },
+        {
+          "end": 6414,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998291730880737,
+          "start": 6409
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 287.537333,
+      "fixture": "multi_window",
+      "fixture_sha256": "f73d10ae82485b1d4bcb6af514c0ef66bbd923ec9b53aeb1e30b0bb849267b57",
+      "initialization": {
+        "session_ms": 286.505875,
+        "tokenizer_ms": 47.314625,
+        "total_ms": 333.99195799999995
+      },
+      "input_bytes": 6416,
+      "input_tokens_including_special": 1586,
+      "median_ms": 309.99160400000005,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 336.914417,
+      "processed_tokens_including_overlap_and_special": 1976,
+      "quality": {
+        "actual": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "start": 6409
+          }
+        ],
+        "exact_matches": 17,
+        "expected": [
+          {
+            "end": 772,
+            "family": "PERSON",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "PERSON",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "PERSON",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "PERSON",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "ORG",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "PERSON",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "PERSON",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "start": 6409
+          }
+        ],
+        "incorrect_outputs": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "start": 760
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "start": 1562
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "start": 2364
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "start": 3166
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "start": 3990
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "start": 5572
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "start": 6374
+          }
+        ],
+        "missed_labels": [
+          {
+            "end": 772,
+            "family": "PERSON",
+            "start": 760
+          },
+          {
+            "end": 1574,
+            "family": "PERSON",
+            "start": 1562
+          },
+          {
+            "end": 2376,
+            "family": "PERSON",
+            "start": 2364
+          },
+          {
+            "end": 3178,
+            "family": "PERSON",
+            "start": 3166
+          },
+          {
+            "end": 3999,
+            "family": "ORG",
+            "start": 3990
+          },
+          {
+            "end": 5584,
+            "family": "PERSON",
+            "start": 5572
+          },
+          {
+            "end": 6386,
+            "family": "PERSON",
+            "start": 6374
+          }
+        ],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": [
+          {
+            "actual": {
+              "end": 772,
+              "family": "ORG",
+              "start": 760
+            },
+            "expected": {
+              "end": 772,
+              "family": "PERSON",
+              "start": 760
+            }
+          },
+          {
+            "actual": {
+              "end": 1574,
+              "family": "ORG",
+              "start": 1562
+            },
+            "expected": {
+              "end": 1574,
+              "family": "PERSON",
+              "start": 1562
+            }
+          },
+          {
+            "actual": {
+              "end": 2376,
+              "family": "ORG",
+              "start": 2364
+            },
+            "expected": {
+              "end": 2376,
+              "family": "PERSON",
+              "start": 2364
+            }
+          },
+          {
+            "actual": {
+              "end": 3178,
+              "family": "ORG",
+              "start": 3166
+            },
+            "expected": {
+              "end": 3178,
+              "family": "PERSON",
+              "start": 3166
+            }
+          },
+          {
+            "actual": {
+              "end": 3999,
+              "family": "LOCATION",
+              "start": 3990
+            },
+            "expected": {
+              "end": 3999,
+              "family": "ORG",
+              "start": 3990
+            }
+          },
+          {
+            "actual": {
+              "end": 5584,
+              "family": "ORG",
+              "start": 5572
+            },
+            "expected": {
+              "end": 5584,
+              "family": "PERSON",
+              "start": 5572
+            }
+          },
+          {
+            "actual": {
+              "end": 6386,
+              "family": "ORG",
+              "start": 6374
+            },
+            "expected": {
+              "end": 6386,
+              "family": "PERSON",
+              "start": 6374
+            }
+          }
+        ]
+      },
+      "rss_snapshots_bytes": {
+        "before": 8765440,
+        "first_call": 481968128,
+        "initialized": 389513216,
+        "warm": 546897920
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "44362a7a73de4f9ab3ff2920a105acace2f773d2480248fbebb85733a646fa73",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[LOCATION_2]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[ORG_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+          "[ORG_2]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[LOCATION_2]",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 6409
+          }
+        ],
+        "sequence_len": 1586,
+        "windows": 4
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.06975,
+          "masking_ms": 0.017499999999999998,
+          "model_execution_ms": 302.995624,
+          "recognizers_ms": 0.001959,
+          "stitching_ms": 0.026498999999999998,
+          "tensor_preparation_ms": 0.0035009999999999998,
+          "tokenization_ms": 1.1795,
+          "total_ms": 314.385541,
+          "window_preparation_ms": 7.396958000000001
+        },
+        {
+          "decoding_ms": 0.079208,
+          "masking_ms": 0.020041999999999997,
+          "model_execution_ms": 304.265166,
+          "recognizers_ms": 0.001959,
+          "stitching_ms": 0.025166,
+          "tensor_preparation_ms": 0.0034159999999999998,
+          "tokenization_ms": 1.173667,
+          "total_ms": 315.688834,
+          "window_preparation_ms": 7.393583
+        },
+        {
+          "decoding_ms": 0.075626,
+          "masking_ms": 0.017167,
+          "model_execution_ms": 307.70649899999995,
+          "recognizers_ms": 0.0012920000000000002,
+          "stitching_ms": 0.025584000000000003,
+          "tensor_preparation_ms": 0.0033750000000000004,
+          "tokenization_ms": 1.215042,
+          "total_ms": 319.29245899999995,
+          "window_preparation_ms": 7.545541
+        },
+        {
+          "decoding_ms": 0.069209,
+          "masking_ms": 0.017334,
+          "model_execution_ms": 299.72758300000004,
+          "recognizers_ms": 0.002375,
+          "stitching_ms": 0.02704,
+          "tensor_preparation_ms": 0.0033339999999999997,
+          "tokenization_ms": 1.1339169999999998,
+          "total_ms": 311.108834,
+          "window_preparation_ms": 7.4822500000000005
+        },
+        {
+          "decoding_ms": 0.069083,
+          "masking_ms": 0.016583999999999998,
+          "model_execution_ms": 263.224335,
+          "recognizers_ms": 0.001792,
+          "stitching_ms": 0.021834,
+          "tensor_preparation_ms": 0.0033339999999999997,
+          "tokenization_ms": 1.176375,
+          "total_ms": 274.68604200000004,
+          "window_preparation_ms": 7.472
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 3.206921149174278,
+        "input_bytes_per_second": 20575.606093102168,
+        "input_tokens_per_second": 5086.176942590405
+      },
+      "trace_path": null,
+      "warm_ms": [
+        313.84695899999997,
+        306.799458,
+        312.185625,
+        314.29366699999997,
+        307.651417,
+        311.78087500000004,
+        312.854792,
+        309.628541,
+        311.12537499999996,
+        311.775917,
+        343.538583,
+        307.10191599999996,
+        336.914417,
+        312.746084,
+        309.1635,
+        310.034125,
+        308.15975000000003,
+        308.14970800000003,
+        309.607792,
+        309.94908300000003,
+        310.61575000000005,
+        312.394333,
+        306.412666,
+        304.75775,
+        306.300916,
+        306.459167,
+        305.336083,
+        305.191417,
+        314.345583,
+        315.645708
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2059,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 4,
+      "peak_rss_bytes": 570802176,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 309.99160400000005,
+        "measured_stage_total_median_ms": 314.385541,
+        "delta_ms": 4.393936999999937,
+        "delta_percent": 1.417437421950285,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 0,
+      "stderr_file": "validated-baseline-0-multi_window.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 1996,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.998934805393219,
+          "start": 1984
+        },
+        {
+          "end": 2010,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9119672179222107,
+          "start": 2005
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 79.58274999999999,
+      "fixture": "near_limit",
+      "fixture_sha256": "e8601b525f61f44f37e5291ef49ff935db3f573c82cc16dda9c418714adbff88",
+      "initialization": {
+        "session_ms": 374.142792,
+        "tokenizer_ms": 51.003750000000004,
+        "total_ms": 425.321583
+      },
+      "input_bytes": 2011,
+      "input_tokens_including_special": 503,
+      "median_ms": 66.8931665,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 71.965208,
+      "processed_tokens_including_overlap_and_special": 503,
+      "quality": {
+        "actual": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "start": 2005
+          }
+        ],
+        "exact_matches": 2,
+        "expected": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "start": 2005
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8765440,
+        "first_call": 454213632,
+        "initialized": 396263424,
+        "warm": 459407360
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "fbf56c76533cf152d0285f7cbcf42b07d62594664d3acd2b4112c9be9b923ef2",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2005
+          }
+        ],
+        "sequence_len": 503,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.0165,
+          "masking_ms": 0.00775,
+          "model_execution_ms": 66.29845800000001,
+          "recognizers_ms": 0.0014160000000000002,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00033299999999999996,
+          "tokenization_ms": 0.43775,
+          "total_ms": 66.769959,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.013125000000000001,
+          "masking_ms": 0.008749999999999999,
+          "model_execution_ms": 66.256041,
+          "recognizers_ms": 0.001,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000292,
+          "tokenization_ms": 0.427959,
+          "total_ms": 66.714541,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.013583,
+          "masking_ms": 0.007958000000000002,
+          "model_execution_ms": 66.228791,
+          "recognizers_ms": 0.001458,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00033299999999999996,
+          "tokenization_ms": 0.41220900000000005,
+          "total_ms": 66.67175,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.016625,
+          "masking_ms": 0.0125,
+          "model_execution_ms": 66.263041,
+          "recognizers_ms": 0.001083,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000334,
+          "tokenization_ms": 0.412542,
+          "total_ms": 66.71375,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.014,
+          "masking_ms": 0.009417,
+          "model_execution_ms": 65.88445800000001,
+          "recognizers_ms": 0.0011250000000000001,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00033299999999999996,
+          "tokenization_ms": 0.403917,
+          "total_ms": 66.320917,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 14.765208293984463,
+        "input_bytes_per_second": 29692.833879202753,
+        "input_tokens_per_second": 7426.899771874185
+      },
+      "trace_path": null,
+      "warm_ms": [
+        66.50087500000001,
+        66.614625,
+        67.190417,
+        68.311625,
+        68.2775,
+        68.752625,
+        68.04549999999999,
+        68.233458,
+        66.777875,
+        66.05483299999999,
+        66.451125,
+        66.263375,
+        66.118708,
+        66.268541,
+        66.37183300000001,
+        66.645792,
+        66.366583,
+        66.503792,
+        66.76899999999999,
+        67.237417,
+        67.956208,
+        72.633458,
+        70.880167,
+        68.724666,
+        68.86604100000001,
+        71.965208,
+        70.58399999999999,
+        66.914125,
+        66.872208,
+        66.651792
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2011,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 495943680,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 66.8931665,
+        "measured_stage_total_median_ms": 66.71375,
+        "delta_ms": -0.1794165000000021,
+        "delta_percent": -0.2682134953201909,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 0,
+      "stderr_file": "validated-baseline-0-near_limit.stderr.txt"
+    },
+    {
+      "confidence": [],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 21.914625,
+      "fixture": "no_entity",
+      "fixture_sha256": "f93293407e5d934f37147030881fb7f7eba8d41a4e4fbed00ae61aa6722c8e31",
+      "initialization": {
+        "session_ms": 284.952292,
+        "tokenizer_ms": 52.850042,
+        "total_ms": 338.014708
+      },
+      "input_bytes": 390,
+      "input_tokens_including_special": 107,
+      "median_ms": 14.667583500000001,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 15.908999999999999,
+      "processed_tokens_including_overlap_and_special": 107,
+      "quality": {
+        "actual": [],
+        "exact_matches": 0,
+        "expected": [],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8699904,
+        "first_call": 402833408,
+        "initialized": 389644288,
+        "warm": 403062784
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "1bb22dd5b0ba225b31387c7a8e4e27802a8bb7020ae63c24e57ac297097ed616",
+        "placeholder_map_sha256": {},
+        "replacements": [],
+        "sequence_len": 107,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.003625,
+          "masking_ms": 0.00025,
+          "model_execution_ms": 14.402167,
+          "recognizers_ms": 0.000417,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.098,
+          "total_ms": 14.506958000000001,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.003084,
+          "masking_ms": 0.000292,
+          "model_execution_ms": 14.713916000000001,
+          "recognizers_ms": 0.00029099999999999997,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.09895799999999999,
+          "total_ms": 14.818958,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.003333,
+          "masking_ms": 0.000417,
+          "model_execution_ms": 14.439125,
+          "recognizers_ms": 0.00025,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.113292,
+          "total_ms": 14.559084,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.004083,
+          "masking_ms": 0.000375,
+          "model_execution_ms": 14.912375,
+          "recognizers_ms": 0.00033299999999999996,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00020800000000000001,
+          "tokenization_ms": 0.090625,
+          "total_ms": 15.011208,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.0043749999999999995,
+          "masking_ms": 0.0005,
+          "model_execution_ms": 14.615542,
+          "recognizers_ms": 0.0005,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.10825,
+          "total_ms": 14.732208,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 67.19178976532912,
+        "input_bytes_per_second": 26204.79800847836,
+        "input_tokens_per_second": 7189.521504890216
+      },
+      "trace_path": null,
+      "warm_ms": [
+        14.573875,
+        14.549958,
+        14.359333,
+        15.469875,
+        15.417,
+        15.579083,
+        15.490166,
+        15.908999999999999,
+        16.053250000000002,
+        15.574208,
+        15.441208,
+        14.954875,
+        14.961209,
+        14.973625,
+        14.770083,
+        14.743083,
+        14.716083,
+        14.611875,
+        14.666167000000002,
+        14.669,
+        14.449958,
+        14.534458,
+        14.543916000000001,
+        14.506417,
+        14.551416,
+        14.427958,
+        14.535041999999999,
+        14.473708,
+        14.488792,
+        14.4885
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 389,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 427360256,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 14.667583500000001,
+        "measured_stage_total_median_ms": 14.732208,
+        "delta_ms": 0.06462449999999897,
+        "delta_percent": 0.44059404877427877,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 0,
+      "stderr_file": "validated-baseline-0-no_entity.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 12,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.9996919631958008,
+          "start": 0
+        },
+        {
+          "end": 31,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9998224377632141,
+          "start": 22
+        },
+        {
+          "end": 40,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9996576309204102,
+          "start": 35
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 10.326167,
+      "fixture": "short",
+      "fixture_sha256": "038b591e3ea8c291730d6ce111e70bf44e4bf2b9d4dadd43514a2124aa4f8906",
+      "initialization": {
+        "session_ms": 299.758375,
+        "tokenizer_ms": 50.94775,
+        "total_ms": 350.857709
+      },
+      "input_bytes": 41,
+      "input_tokens_including_special": 10,
+      "median_ms": 3.6120205,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 3.89075,
+      "processed_tokens_including_overlap_and_special": 10,
+      "quality": {
+        "actual": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "start": 35
+          }
+        ],
+        "exact_matches": 3,
+        "expected": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "start": 35
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 407207936,
+        "initialized": 403128320,
+        "warm": 407339008
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "dfc3c8ce98fb8527382d9fe24f6d1cbf23a56437ae5337fd5f8f6817f9c52a25",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[ORG_1]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_1]",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 35
+          }
+        ],
+        "sequence_len": 10,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.001083,
+          "masking_ms": 0.00275,
+          "model_execution_ms": 3.5331249999999996,
+          "recognizers_ms": 4.1e-05,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.018708000000000002,
+          "total_ms": 3.557209,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001459,
+          "masking_ms": 0.003292,
+          "model_execution_ms": 3.526167,
+          "recognizers_ms": 0.000209,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.016458,
+          "total_ms": 3.549,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001958,
+          "masking_ms": 0.005208,
+          "model_execution_ms": 3.792292,
+          "recognizers_ms": 0.000417,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 8.3e-05,
+          "tokenization_ms": 0.018791,
+          "total_ms": 3.820292,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.002,
+          "masking_ms": 0.003583,
+          "model_execution_ms": 3.7529999999999997,
+          "recognizers_ms": 0.00033299999999999996,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000209,
+          "tokenization_ms": 0.024624999999999998,
+          "total_ms": 3.7854170000000003,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001666,
+          "masking_ms": 0.004,
+          "model_execution_ms": 3.593083,
+          "recognizers_ms": 0.00033299999999999996,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 8.3e-05,
+          "tokenization_ms": 0.019292,
+          "total_ms": 3.619709,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 274.95702925720593,
+        "input_bytes_per_second": 11273.238199545443,
+        "input_tokens_per_second": 2749.5702925720593
+      },
+      "trace_path": null,
+      "warm_ms": [
+        3.593625,
+        3.611166,
+        3.628,
+        3.6128750000000003,
+        3.606959,
+        3.623792,
+        3.935,
+        3.833208,
+        3.606667,
+        3.596584,
+        3.652666,
+        3.5750830000000002,
+        3.574459,
+        3.585125,
+        3.89075,
+        3.776541,
+        3.679791,
+        3.6129170000000004,
+        3.619708,
+        3.613917,
+        3.574875,
+        3.5604999999999998,
+        3.596625,
+        3.554375,
+        3.6305,
+        3.633166,
+        3.630125,
+        3.5460000000000003,
+        3.6024999999999996,
+        3.550459
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 41,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 426229760,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 3.6120205,
+        "measured_stage_total_median_ms": 3.619709,
+        "delta_ms": 0.007688499999999987,
+        "delta_percent": 0.21285870332130585,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 0,
+      "stderr_file": "validated-baseline-0-short.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 32,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.998860239982605,
+          "start": 19
+        },
+        {
+          "end": 43,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9980775117874146,
+          "start": 36
+        },
+        {
+          "end": 90,
+          "family": "EMAIL_ADDRESS",
+          "placeholder": "[EMAIL_ADDRESS_1]",
+          "score": 0.949999988079071,
+          "start": 72
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 12.598333,
+      "fixture": "unicode_repeated",
+      "fixture_sha256": "4ce916fc9caff0f3856fdbdfa747f42387a5e3395229e87e571ccf8fa380aa12",
+      "initialization": {
+        "session_ms": 281.51154099999997,
+        "tokenizer_ms": 47.210417,
+        "total_ms": 328.888709
+      },
+      "input_bytes": 100,
+      "input_tokens_including_special": 28,
+      "median_ms": 5.6970209999999994,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 6.210333,
+      "processed_tokens_including_overlap_and_special": 28,
+      "quality": {
+        "actual": [
+          {
+            "end": 32,
+            "family": "PERSON",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "start": 36
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "start": 72
+          }
+        ],
+        "exact_matches": 3,
+        "expected": [
+          {
+            "end": 14,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 32,
+            "family": "PERSON",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "start": 36
+          },
+          {
+            "end": 61,
+            "family": "PERSON",
+            "start": 47
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "start": 72
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [
+          {
+            "end": 14,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 61,
+            "family": "PERSON",
+            "start": 47
+          }
+        ],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8749056,
+        "first_call": 395132928,
+        "initialized": 389251072,
+        "warm": 395689984
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "905227ecc9e7f43826af8fadb4a703d31fda0fc7d866a385772ba7a1a387462e",
+        "placeholder_map_sha256": {
+          "[EMAIL_ADDRESS_1]": "1971b976746bc809648aafaf3c68cb52d5a5145838cb3f3f13dfb0c817dfebe6",
+          "[LOCATION_1]": "4251685e06cab635578c72b1f5f221e9840a05ac4d8f2404be4177aa87f9907d",
+          "[PERSON_1]": "978edf99a5ad71c48bebe7c1b4bbc00dbd9f13347431a8c8665e11f03dd034a0"
+        },
+        "replacements": [
+          {
+            "end": 32,
+            "family": "PERSON",
+            "original_sha256": "978edf99a5ad71c48bebe7c1b4bbc00dbd9f13347431a8c8665e11f03dd034a0",
+            "placeholder": "[PERSON_1]",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "original_sha256": "4251685e06cab635578c72b1f5f221e9840a05ac4d8f2404be4177aa87f9907d",
+            "placeholder": "[LOCATION_1]",
+            "start": 36
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "original_sha256": "1971b976746bc809648aafaf3c68cb52d5a5145838cb3f3f13dfb0c817dfebe6",
+            "placeholder": "[EMAIL_ADDRESS_1]",
+            "start": 72
+          }
+        ],
+        "sequence_len": 28,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.002417,
+          "masking_ms": 0.005458,
+          "model_execution_ms": 5.834958,
+          "recognizers_ms": 0.006291000000000001,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00020800000000000001,
+          "tokenization_ms": 0.0485,
+          "total_ms": 5.899583,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.0024159999999999997,
+          "masking_ms": 0.004875,
+          "model_execution_ms": 5.721792,
+          "recognizers_ms": 0.006375,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 8.4e-05,
+          "tokenization_ms": 0.038584,
+          "total_ms": 5.7757499999999995,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.002833,
+          "masking_ms": 0.005667,
+          "model_execution_ms": 5.9157910000000005,
+          "recognizers_ms": 0.006583,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00020800000000000001,
+          "tokenization_ms": 0.032875,
+          "total_ms": 5.9657089999999995,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.0025,
+          "masking_ms": 0.005083000000000001,
+          "model_execution_ms": 5.999792,
+          "recognizers_ms": 0.0065,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000166,
+          "tokenization_ms": 0.04,
+          "total_ms": 6.056125,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.003333,
+          "masking_ms": 0.011,
+          "model_execution_ms": 5.967083,
+          "recognizers_ms": 0.007375,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00025,
+          "tokenization_ms": 0.041124999999999995,
+          "total_ms": 6.032584,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 174.942328074771,
+        "input_bytes_per_second": 17494.232807477103,
+        "input_tokens_per_second": 4898.385186093588
+      },
+      "trace_path": null,
+      "warm_ms": [
+        5.301166,
+        5.250583,
+        5.234709,
+        5.239,
+        5.325625,
+        5.599749999999999,
+        5.5500419999999995,
+        5.074999999999999,
+        4.941584,
+        5.5075840000000005,
+        5.825709,
+        5.764084,
+        5.692333,
+        5.642167,
+        5.701709,
+        5.668875,
+        5.655417,
+        5.669833,
+        6.0673330000000005,
+        6.193083000000001,
+        6.210333,
+        6.128333,
+        6.470791,
+        6.154625,
+        6.183625,
+        5.905125,
+        5.849375,
+        5.779792,
+        5.947375,
+        5.950125
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 100,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 414777344,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 5.6970209999999994,
+        "measured_stage_total_median_ms": 5.9657089999999995,
+        "delta_ms": 0.26868800000000004,
+        "delta_percent": 4.716289443201993,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 0,
+      "stderr_file": "validated-baseline-0-unicode_repeated.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 772,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.8861898183822632,
+          "start": 760
+        },
+        {
+          "end": 791,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9798853993415833,
+          "start": 782
+        },
+        {
+          "end": 800,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998626708984375,
+          "start": 795
+        },
+        {
+          "end": 1574,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9810609817504883,
+          "start": 1562
+        },
+        {
+          "end": 1593,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.966045081615448,
+          "start": 1584
+        },
+        {
+          "end": 1602,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.999849796295166,
+          "start": 1597
+        },
+        {
+          "end": 2376,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9131879806518555,
+          "start": 2364
+        },
+        {
+          "end": 2395,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9119876027107239,
+          "start": 2386
+        },
+        {
+          "end": 2404,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9997257590293884,
+          "start": 2399
+        },
+        {
+          "end": 3178,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.7199178338050842,
+          "start": 3166
+        },
+        {
+          "end": 3197,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9740678668022156,
+          "start": 3188
+        },
+        {
+          "end": 3206,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9996525049209595,
+          "start": 3201
+        },
+        {
+          "end": 3980,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.563504695892334,
+          "start": 3968
+        },
+        {
+          "end": 3999,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_2]",
+          "score": 0.9237555265426636,
+          "start": 3990
+        },
+        {
+          "end": 4008,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998427629470825,
+          "start": 4003
+        },
+        {
+          "end": 4782,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.8987553119659424,
+          "start": 4770
+        },
+        {
+          "end": 4801,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.7987143993377686,
+          "start": 4792
+        },
+        {
+          "end": 4810,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9997755885124207,
+          "start": 4805
+        },
+        {
+          "end": 5584,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9725075364112854,
+          "start": 5572
+        },
+        {
+          "end": 5603,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9948508143424988,
+          "start": 5594
+        },
+        {
+          "end": 5612,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998366832733154,
+          "start": 5607
+        },
+        {
+          "end": 6386,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.720318615436554,
+          "start": 6374
+        },
+        {
+          "end": 6405,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9984013438224792,
+          "start": 6396
+        },
+        {
+          "end": 6414,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998291730880737,
+          "start": 6409
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 292.15166700000003,
+      "fixture": "multi_window",
+      "fixture_sha256": "f73d10ae82485b1d4bcb6af514c0ef66bbd923ec9b53aeb1e30b0bb849267b57",
+      "initialization": {
+        "session_ms": 283.737666,
+        "tokenizer_ms": 49.190459,
+        "total_ms": 333.115542
+      },
+      "input_bytes": 6416,
+      "input_tokens_including_special": 1586,
+      "median_ms": 272.97704150000004,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 281.139708,
+      "processed_tokens_including_overlap_and_special": 1976,
+      "quality": {
+        "actual": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "start": 6409
+          }
+        ],
+        "exact_matches": 17,
+        "expected": [
+          {
+            "end": 772,
+            "family": "PERSON",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "PERSON",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "PERSON",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "PERSON",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "ORG",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "PERSON",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "PERSON",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "start": 6409
+          }
+        ],
+        "incorrect_outputs": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "start": 760
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "start": 1562
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "start": 2364
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "start": 3166
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "start": 3990
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "start": 5572
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "start": 6374
+          }
+        ],
+        "missed_labels": [
+          {
+            "end": 772,
+            "family": "PERSON",
+            "start": 760
+          },
+          {
+            "end": 1574,
+            "family": "PERSON",
+            "start": 1562
+          },
+          {
+            "end": 2376,
+            "family": "PERSON",
+            "start": 2364
+          },
+          {
+            "end": 3178,
+            "family": "PERSON",
+            "start": 3166
+          },
+          {
+            "end": 3999,
+            "family": "ORG",
+            "start": 3990
+          },
+          {
+            "end": 5584,
+            "family": "PERSON",
+            "start": 5572
+          },
+          {
+            "end": 6386,
+            "family": "PERSON",
+            "start": 6374
+          }
+        ],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": [
+          {
+            "actual": {
+              "end": 772,
+              "family": "ORG",
+              "start": 760
+            },
+            "expected": {
+              "end": 772,
+              "family": "PERSON",
+              "start": 760
+            }
+          },
+          {
+            "actual": {
+              "end": 1574,
+              "family": "ORG",
+              "start": 1562
+            },
+            "expected": {
+              "end": 1574,
+              "family": "PERSON",
+              "start": 1562
+            }
+          },
+          {
+            "actual": {
+              "end": 2376,
+              "family": "ORG",
+              "start": 2364
+            },
+            "expected": {
+              "end": 2376,
+              "family": "PERSON",
+              "start": 2364
+            }
+          },
+          {
+            "actual": {
+              "end": 3178,
+              "family": "ORG",
+              "start": 3166
+            },
+            "expected": {
+              "end": 3178,
+              "family": "PERSON",
+              "start": 3166
+            }
+          },
+          {
+            "actual": {
+              "end": 3999,
+              "family": "LOCATION",
+              "start": 3990
+            },
+            "expected": {
+              "end": 3999,
+              "family": "ORG",
+              "start": 3990
+            }
+          },
+          {
+            "actual": {
+              "end": 5584,
+              "family": "ORG",
+              "start": 5572
+            },
+            "expected": {
+              "end": 5584,
+              "family": "PERSON",
+              "start": 5572
+            }
+          },
+          {
+            "actual": {
+              "end": 6386,
+              "family": "ORG",
+              "start": 6374
+            },
+            "expected": {
+              "end": 6386,
+              "family": "PERSON",
+              "start": 6374
+            }
+          }
+        ]
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 486899712,
+        "initialized": 392298496,
+        "warm": 556531712
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "44362a7a73de4f9ab3ff2920a105acace2f773d2480248fbebb85733a646fa73",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[LOCATION_2]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[ORG_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+          "[ORG_2]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[LOCATION_2]",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 6409
+          }
+        ],
+        "sequence_len": 1586,
+        "windows": 4
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.0785,
+          "masking_ms": 0.017499999999999998,
+          "model_execution_ms": 268.61204299999997,
+          "recognizers_ms": 0.0024159999999999997,
+          "stitching_ms": 0.025584000000000003,
+          "tensor_preparation_ms": 0.003333,
+          "tokenization_ms": 1.208542,
+          "total_ms": 280.058292,
+          "window_preparation_ms": 7.440417
+        },
+        {
+          "decoding_ms": 0.07075000000000001,
+          "masking_ms": 0.016708,
+          "model_execution_ms": 262.62866699999995,
+          "recognizers_ms": 0.00029099999999999997,
+          "stitching_ms": 0.02475,
+          "tensor_preparation_ms": 0.0033330000000000005,
+          "tokenization_ms": 1.194458,
+          "total_ms": 273.997333,
+          "window_preparation_ms": 7.407541
+        },
+        {
+          "decoding_ms": 0.0675,
+          "masking_ms": 0.02075,
+          "model_execution_ms": 263.18379,
+          "recognizers_ms": 0.002042,
+          "stitching_ms": 0.029582999999999998,
+          "tensor_preparation_ms": 0.003542,
+          "tokenization_ms": 1.19825,
+          "total_ms": 274.60833299999996,
+          "window_preparation_ms": 7.413125
+        },
+        {
+          "decoding_ms": 0.067708,
+          "masking_ms": 0.016125,
+          "model_execution_ms": 261.082832,
+          "recognizers_ms": 0.003958,
+          "stitching_ms": 0.023835000000000002,
+          "tensor_preparation_ms": 0.003333,
+          "tokenization_ms": 1.193292,
+          "total_ms": 272.59220899999997,
+          "window_preparation_ms": 7.481667
+        },
+        {
+          "decoding_ms": 0.07675,
+          "masking_ms": 0.017833,
+          "model_execution_ms": 262.864207,
+          "recognizers_ms": 0.004083,
+          "stitching_ms": 0.030250000000000003,
+          "tensor_preparation_ms": 0.0031680000000000002,
+          "tokenization_ms": 1.196208,
+          "total_ms": 274.24879200000004,
+          "window_preparation_ms": 7.400291
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 3.6370174169157874,
+        "input_bytes_per_second": 23335.10374693169,
+        "input_tokens_per_second": 5768.309623228439
+      },
+      "trace_path": null,
+      "warm_ms": [
+        271.573375,
+        271.907959,
+        273.22279199999997,
+        271.773583,
+        272.406459,
+        273.204417,
+        271.270458,
+        271.393583,
+        272.7195,
+        274.923375,
+        271.67091700000003,
+        272.131208,
+        272.03883299999995,
+        274.043833,
+        277.717334,
+        276.95725,
+        277.254542,
+        274.354542,
+        272.72925,
+        272.970333,
+        273.356334,
+        276.824792,
+        272.79641599999997,
+        272.98375000000004,
+        273.44437500000004,
+        280.81379200000003,
+        306.043042,
+        272.37283299999996,
+        272.478417,
+        281.139708
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2059,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 4,
+      "peak_rss_bytes": 578912256,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 272.97704150000004,
+        "measured_stage_total_median_ms": 274.24879200000004,
+        "delta_ms": 1.271750499999996,
+        "delta_percent": 0.4658818532913056,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 1,
+      "stderr_file": "validated-baseline-1-multi_window.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 1996,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.998934805393219,
+          "start": 1984
+        },
+        {
+          "end": 2010,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9119672179222107,
+          "start": 2005
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 78.93233400000001,
+      "fixture": "near_limit",
+      "fixture_sha256": "e8601b525f61f44f37e5291ef49ff935db3f573c82cc16dda9c418714adbff88",
+      "initialization": {
+        "session_ms": 297.947833,
+        "tokenizer_ms": 47.278625,
+        "total_ms": 345.387875
+      },
+      "input_bytes": 2011,
+      "input_tokens_including_special": 503,
+      "median_ms": 67.63497949999999,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 70.735167,
+      "processed_tokens_including_overlap_and_special": 503,
+      "quality": {
+        "actual": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "start": 2005
+          }
+        ],
+        "exact_matches": 2,
+        "expected": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "start": 2005
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8749056,
+        "first_call": 452526080,
+        "initialized": 389201920,
+        "warm": 457736192
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "fbf56c76533cf152d0285f7cbcf42b07d62594664d3acd2b4112c9be9b923ef2",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2005
+          }
+        ],
+        "sequence_len": 503,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.013916,
+          "masking_ms": 0.007459,
+          "model_execution_ms": 122.414917,
+          "recognizers_ms": 0.001584,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00033299999999999996,
+          "tokenization_ms": 0.41362499999999996,
+          "total_ms": 122.864084,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.01425,
+          "masking_ms": 0.00825,
+          "model_execution_ms": 69.828667,
+          "recognizers_ms": 0.001584,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00025,
+          "tokenization_ms": 0.42374999999999996,
+          "total_ms": 70.2865,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.01475,
+          "masking_ms": 0.008459,
+          "model_execution_ms": 71.273625,
+          "recognizers_ms": 0.001584,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00041600000000000003,
+          "tokenization_ms": 0.422375,
+          "total_ms": 71.732958,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.025042,
+          "masking_ms": 0.014667,
+          "model_execution_ms": 70.711708,
+          "recognizers_ms": 0.0015409999999999998,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000292,
+          "tokenization_ms": 0.42583299999999996,
+          "total_ms": 71.186542,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.023833,
+          "masking_ms": 0.016333,
+          "model_execution_ms": 67.404583,
+          "recognizers_ms": 0.001375,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00025,
+          "tokenization_ms": 0.44616700000000004,
+          "total_ms": 67.899958,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 14.67565784998703,
+        "input_bytes_per_second": 29512.747936323914,
+        "input_tokens_per_second": 7381.855898543476
+      },
+      "trace_path": null,
+      "warm_ms": [
+        66.739,
+        66.932542,
+        66.409042,
+        67.412959,
+        66.61458300000001,
+        68.222833,
+        67.171416,
+        67.32029200000001,
+        68.237375,
+        66.460875,
+        65.90216699999999,
+        66.280125,
+        67.38645799999999,
+        71.196459,
+        70.735167,
+        70.182209,
+        68.868041,
+        67.50699999999999,
+        66.843,
+        67.493042,
+        69.509708,
+        70.509667,
+        69.53616699999999,
+        69.92254100000001,
+        70.030625,
+        69.415167,
+        68.766125,
+        68.098667,
+        67.762959,
+        66.735167
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2011,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 492814336,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 67.63497949999999,
+        "measured_stage_total_median_ms": 71.186542,
+        "delta_ms": 3.551562500000017,
+        "delta_percent": 5.251073521800986,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 1,
+      "stderr_file": "validated-baseline-1-near_limit.stderr.txt"
+    },
+    {
+      "confidence": [],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 21.803916,
+      "fixture": "no_entity",
+      "fixture_sha256": "f93293407e5d934f37147030881fb7f7eba8d41a4e4fbed00ae61aa6722c8e31",
+      "initialization": {
+        "session_ms": 277.65387499999997,
+        "tokenizer_ms": 55.230042,
+        "total_ms": 333.06012499999997
+      },
+      "input_bytes": 390,
+      "input_tokens_including_special": 107,
+      "median_ms": 14.572291499999999,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 14.965,
+      "processed_tokens_including_overlap_and_special": 107,
+      "quality": {
+        "actual": [],
+        "exact_matches": 0,
+        "expected": [],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 401473536,
+        "initialized": 389251072,
+        "warm": 401702912
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "1bb22dd5b0ba225b31387c7a8e4e27802a8bb7020ae63c24e57ac297097ed616",
+        "placeholder_map_sha256": {},
+        "replacements": [],
+        "sequence_len": 107,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.004792,
+          "masking_ms": 0.0006670000000000001,
+          "model_execution_ms": 14.624625,
+          "recognizers_ms": 0.0005,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00020800000000000001,
+          "tokenization_ms": 0.13520900000000002,
+          "total_ms": 14.769292,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.004959,
+          "masking_ms": 0.000958,
+          "model_execution_ms": 14.369,
+          "recognizers_ms": 0.000917,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00025,
+          "tokenization_ms": 0.12387499999999999,
+          "total_ms": 14.503583,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.00425,
+          "masking_ms": 0.00075,
+          "model_execution_ms": 14.401458,
+          "recognizers_ms": 0.000541,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00033299999999999996,
+          "tokenization_ms": 0.111916,
+          "total_ms": 14.522458,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.0047079999999999995,
+          "masking_ms": 0.000959,
+          "model_execution_ms": 14.403583,
+          "recognizers_ms": 0.0006670000000000001,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00033299999999999996,
+          "tokenization_ms": 0.093417,
+          "total_ms": 14.507041,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.004333,
+          "masking_ms": 0.000792,
+          "model_execution_ms": 14.3665,
+          "recognizers_ms": 0.000625,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00020800000000000001,
+          "tokenization_ms": 0.109375,
+          "total_ms": 14.484874999999999,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 68.36381726838394,
+        "input_bytes_per_second": 26661.888734669737,
+        "input_tokens_per_second": 7314.928447717082
+      },
+      "trace_path": null,
+      "warm_ms": [
+        14.484167,
+        14.570292,
+        14.562541,
+        14.443375,
+        14.898916,
+        14.675125000000001,
+        15.071916,
+        14.675749999999999,
+        14.403832999999999,
+        14.409709,
+        14.852041999999999,
+        14.749417000000001,
+        14.562292,
+        14.526459000000001,
+        14.406667,
+        14.426082999999998,
+        14.504084,
+        14.554167,
+        14.579208999999999,
+        14.421958,
+        14.472999999999999,
+        14.895834,
+        14.609708000000001,
+        14.574290999999999,
+        14.527792,
+        14.597208,
+        14.655332999999999,
+        14.965,
+        14.845583000000001,
+        14.906875
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 389,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 427556864,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 14.572291499999999,
+        "measured_stage_total_median_ms": 14.507041,
+        "delta_ms": -0.06525049999999943,
+        "delta_percent": -0.447771031755706,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 1,
+      "stderr_file": "validated-baseline-1-no_entity.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 12,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.9996919631958008,
+          "start": 0
+        },
+        {
+          "end": 31,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9998224377632141,
+          "start": 22
+        },
+        {
+          "end": 40,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9996576309204102,
+          "start": 35
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 10.519957999999999,
+      "fixture": "short",
+      "fixture_sha256": "038b591e3ea8c291730d6ce111e70bf44e4bf2b9d4dadd43514a2124aa4f8906",
+      "initialization": {
+        "session_ms": 290.835958,
+        "tokenizer_ms": 48.52325,
+        "total_ms": 339.52725
+      },
+      "input_bytes": 41,
+      "input_tokens_including_special": 10,
+      "median_ms": 3.6969795000000003,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 3.9353749999999996,
+      "processed_tokens_including_overlap_and_special": 10,
+      "quality": {
+        "actual": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "start": 35
+          }
+        ],
+        "exact_matches": 3,
+        "expected": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "start": 35
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 393297920,
+        "initialized": 389185536,
+        "warm": 393560064
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "dfc3c8ce98fb8527382d9fe24f6d1cbf23a56437ae5337fd5f8f6817f9c52a25",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[ORG_1]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_1]",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 35
+          }
+        ],
+        "sequence_len": 10,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.001083,
+          "masking_ms": 0.003917,
+          "model_execution_ms": 3.652125,
+          "recognizers_ms": 0.000334,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000167,
+          "tokenization_ms": 0.019958,
+          "total_ms": 3.678584,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001,
+          "masking_ms": 0.003792,
+          "model_execution_ms": 3.701,
+          "recognizers_ms": 0.000375,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 8.3e-05,
+          "tokenization_ms": 0.021166,
+          "total_ms": 3.728417,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.0015,
+          "masking_ms": 0.004333,
+          "model_execution_ms": 3.664166,
+          "recognizers_ms": 0.00033299999999999996,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000167,
+          "tokenization_ms": 0.022625000000000003,
+          "total_ms": 3.6942500000000003,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001083,
+          "masking_ms": 0.0035,
+          "model_execution_ms": 3.621625,
+          "recognizers_ms": 0.00033299999999999996,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 8.3e-05,
+          "tokenization_ms": 0.018833000000000003,
+          "total_ms": 3.646417,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.000875,
+          "masking_ms": 0.003125,
+          "model_execution_ms": 3.571041,
+          "recognizers_ms": 0.000334,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 8.3e-05,
+          "tokenization_ms": 0.018958,
+          "total_ms": 3.595583,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 272.77035308494675,
+        "input_bytes_per_second": 11183.584476482818,
+        "input_tokens_per_second": 2727.703530849468
+      },
+      "trace_path": null,
+      "warm_ms": [
+        3.93625,
+        3.737708,
+        3.719542,
+        3.693333,
+        3.707334,
+        3.6804580000000002,
+        3.697917,
+        3.757292,
+        3.70075,
+        3.687458,
+        3.6725,
+        3.9353749999999996,
+        3.808917,
+        3.7655000000000003,
+        3.6917500000000003,
+        3.76275,
+        3.6960420000000003,
+        3.682958,
+        3.636542,
+        3.663959,
+        3.721292,
+        3.8512910000000002,
+        3.7481250000000004,
+        3.4536670000000003,
+        3.372,
+        3.201792,
+        3.1753329999999997,
+        3.426667,
+        3.665667,
+        3.7324580000000003
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 41,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 411549696,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 3.6969795000000003,
+        "measured_stage_total_median_ms": 3.678584,
+        "delta_ms": -0.018395500000000453,
+        "delta_percent": -0.49758187731363535,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 1,
+      "stderr_file": "validated-baseline-1-short.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 32,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.998860239982605,
+          "start": 19
+        },
+        {
+          "end": 43,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9980775117874146,
+          "start": 36
+        },
+        {
+          "end": 90,
+          "family": "EMAIL_ADDRESS",
+          "placeholder": "[EMAIL_ADDRESS_1]",
+          "score": 0.949999988079071,
+          "start": 72
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 12.537459,
+      "fixture": "unicode_repeated",
+      "fixture_sha256": "4ce916fc9caff0f3856fdbdfa747f42387a5e3395229e87e571ccf8fa380aa12",
+      "initialization": {
+        "session_ms": 282.239209,
+        "tokenizer_ms": 48.030792000000005,
+        "total_ms": 330.416834
+      },
+      "input_bytes": 100,
+      "input_tokens_including_special": 28,
+      "median_ms": 5.8437090000000005,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 6.346334000000001,
+      "processed_tokens_including_overlap_and_special": 28,
+      "quality": {
+        "actual": [
+          {
+            "end": 32,
+            "family": "PERSON",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "start": 36
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "start": 72
+          }
+        ],
+        "exact_matches": 3,
+        "expected": [
+          {
+            "end": 14,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 32,
+            "family": "PERSON",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "start": 36
+          },
+          {
+            "end": 61,
+            "family": "PERSON",
+            "start": 47
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "start": 72
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [
+          {
+            "end": 14,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 61,
+            "family": "PERSON",
+            "start": 47
+          }
+        ],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 394821632,
+        "initialized": 389087232,
+        "warm": 395608064
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "905227ecc9e7f43826af8fadb4a703d31fda0fc7d866a385772ba7a1a387462e",
+        "placeholder_map_sha256": {
+          "[EMAIL_ADDRESS_1]": "1971b976746bc809648aafaf3c68cb52d5a5145838cb3f3f13dfb0c817dfebe6",
+          "[LOCATION_1]": "4251685e06cab635578c72b1f5f221e9840a05ac4d8f2404be4177aa87f9907d",
+          "[PERSON_1]": "978edf99a5ad71c48bebe7c1b4bbc00dbd9f13347431a8c8665e11f03dd034a0"
+        },
+        "replacements": [
+          {
+            "end": 32,
+            "family": "PERSON",
+            "original_sha256": "978edf99a5ad71c48bebe7c1b4bbc00dbd9f13347431a8c8665e11f03dd034a0",
+            "placeholder": "[PERSON_1]",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "original_sha256": "4251685e06cab635578c72b1f5f221e9840a05ac4d8f2404be4177aa87f9907d",
+            "placeholder": "[LOCATION_1]",
+            "start": 36
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "original_sha256": "1971b976746bc809648aafaf3c68cb52d5a5145838cb3f3f13dfb0c817dfebe6",
+            "placeholder": "[EMAIL_ADDRESS_1]",
+            "start": 72
+          }
+        ],
+        "sequence_len": 28,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.001917,
+          "masking_ms": 0.0036669999999999997,
+          "model_execution_ms": 5.732708000000001,
+          "recognizers_ms": 0.0050420000000000005,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.032499999999999994,
+          "total_ms": 5.777625,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001917,
+          "masking_ms": 0.003917,
+          "model_execution_ms": 5.649667,
+          "recognizers_ms": 0.005332999999999999,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 8.3e-05,
+          "tokenization_ms": 0.028416999999999998,
+          "total_ms": 5.691125,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.002208,
+          "masking_ms": 0.0053750000000000004,
+          "model_execution_ms": 5.740125,
+          "recognizers_ms": 0.0065,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.029082999999999998,
+          "total_ms": 5.785292,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001916,
+          "masking_ms": 0.0048330000000000005,
+          "model_execution_ms": 5.795125,
+          "recognizers_ms": 0.0051660000000000005,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.034416999999999996,
+          "total_ms": 5.843667,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001792,
+          "masking_ms": 0.004125,
+          "model_execution_ms": 5.778250000000001,
+          "recognizers_ms": 0.005208999999999999,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.0305,
+          "total_ms": 5.821708,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 169.48489923444802,
+        "input_bytes_per_second": 16948.489923444802,
+        "input_tokens_per_second": 4745.577178564545
+      },
+      "trace_path": null,
+      "warm_ms": [
+        5.689417000000001,
+        5.703917000000001,
+        5.6766250000000005,
+        5.6936670000000005,
+        5.726833,
+        5.7234169999999995,
+        5.720875,
+        5.717333,
+        5.677041,
+        5.710666,
+        5.787166,
+        5.722708,
+        5.689917,
+        6.037125,
+        5.986792,
+        5.797084,
+        6.346334000000001,
+        6.2055419999999994,
+        6.282416,
+        6.135042,
+        6.357209,
+        6.185333,
+        6.097125,
+        5.951792,
+        5.903125,
+        5.857834,
+        6.034125,
+        5.898209,
+        5.829584,
+        5.862667
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 100,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 414646272,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 5.8437090000000005,
+        "measured_stage_total_median_ms": 5.785292,
+        "delta_ms": -0.058417000000000385,
+        "delta_percent": -0.9996562114917174,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 1,
+      "stderr_file": "validated-baseline-1-unicode_repeated.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 2048,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.9967755675315857,
+          "start": 2036
+        },
+        {
+          "end": 2062,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9992377758026123,
+          "start": 2057
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 122.66966699999999,
+      "fixture": "boundary",
+      "fixture_sha256": "3344f07fe242c28ad717e6527587119ca52b185838f81ad6b0cf9579b11156be",
+      "initialization": {
+        "session_ms": 296.946041,
+        "tokenizer_ms": 47.436167000000005,
+        "total_ms": 344.551208
+      },
+      "input_bytes": 2464,
+      "input_tokens_including_special": 616,
+      "median_ms": 109.7708125,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 118.89170899999999,
+      "processed_tokens_including_overlap_and_special": 746,
+      "quality": {
+        "actual": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "start": 2057
+          }
+        ],
+        "exact_matches": 2,
+        "expected": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "start": 2057
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 483278848,
+        "initialized": 389545984,
+        "warm": 548274176
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "3cc29ea5ea492c3755099011b463da0e9b34b4fd97ab3e782d2a2a99fa81c111",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2057
+          }
+        ],
+        "sequence_len": 616,
+        "windows": 2
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.026999999999999996,
+          "masking_ms": 0.011375,
+          "model_execution_ms": 99.01904100000002,
+          "recognizers_ms": 0.001792,
+          "stitching_ms": 0.015874,
+          "tensor_preparation_ms": 0.001209,
+          "tokenization_ms": 0.5005,
+          "total_ms": 108.97800000000001,
+          "window_preparation_ms": 6.721042
+        },
+        {
+          "decoding_ms": 0.025708,
+          "masking_ms": 0.006459,
+          "model_execution_ms": 98.060417,
+          "recognizers_ms": 0.0050420000000000005,
+          "stitching_ms": 0.014959,
+          "tensor_preparation_ms": 0.001333,
+          "tokenization_ms": 0.49754200000000004,
+          "total_ms": 107.959833,
+          "window_preparation_ms": 6.702333
+        },
+        {
+          "decoding_ms": 0.021084,
+          "masking_ms": 0.006958,
+          "model_execution_ms": 97.56000000000002,
+          "recognizers_ms": 0.001625,
+          "stitching_ms": 0.013500000000000002,
+          "tensor_preparation_ms": 0.001209,
+          "tokenization_ms": 0.510292,
+          "total_ms": 107.352417,
+          "window_preparation_ms": 6.593458
+        },
+        {
+          "decoding_ms": 0.028458,
+          "masking_ms": 0.006375,
+          "model_execution_ms": 98.692375,
+          "recognizers_ms": 0.001625,
+          "stitching_ms": 0.010584,
+          "tensor_preparation_ms": 0.001042,
+          "tokenization_ms": 0.487542,
+          "total_ms": 108.513834,
+          "window_preparation_ms": 6.6267499999999995
+        },
+        {
+          "decoding_ms": 0.021707999999999998,
+          "masking_ms": 0.017124999999999998,
+          "model_execution_ms": 99.608333,
+          "recognizers_ms": 0.006459,
+          "stitching_ms": 0.012207999999999998,
+          "tensor_preparation_ms": 0.001374,
+          "tokenization_ms": 0.48958300000000005,
+          "total_ms": 109.96499999999999,
+          "window_preparation_ms": 7.004291
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 8.740580021976731,
+        "input_bytes_per_second": 21536.78917415067,
+        "input_tokens_per_second": 5384.197293537667
+      },
+      "trace_path": null,
+      "warm_ms": [
+        110.28370899999999,
+        118.89170899999999,
+        112.329167,
+        108.92525,
+        108.64212500000001,
+        107.95041599999999,
+        108.05170799999999,
+        108.1545,
+        110.510125,
+        109.08312500000001,
+        111.149292,
+        108.37724999999999,
+        107.32704199999999,
+        109.802958,
+        226.752666,
+        116.398541,
+        114.60900000000001,
+        113.381709,
+        113.741083,
+        113.591208,
+        111.9515,
+        111.584958,
+        107.79416599999999,
+        108.130625,
+        107.866958,
+        108.534917,
+        110.545792,
+        109.73866699999999,
+        108.442542,
+        109.723792
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2041,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 2,
+      "peak_rss_bytes": 570490880,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 109.7708125,
+        "measured_stage_total_median_ms": 108.513834,
+        "delta_ms": -1.2569785000000024,
+        "delta_percent": -1.145093555720933,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 1,
+      "stderr_file": "validated-baseline-1-boundary.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 1996,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.998934805393219,
+          "start": 1984
+        },
+        {
+          "end": 2010,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9119672179222107,
+          "start": 2005
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 79.62325000000001,
+      "fixture": "near_limit",
+      "fixture_sha256": "e8601b525f61f44f37e5291ef49ff935db3f573c82cc16dda9c418714adbff88",
+      "initialization": {
+        "session_ms": 321.591875,
+        "tokenizer_ms": 55.034082999999995,
+        "total_ms": 376.830084
+      },
+      "input_bytes": 2011,
+      "input_tokens_including_special": 503,
+      "median_ms": 67.0331665,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 69.64862500000001,
+      "processed_tokens_including_overlap_and_special": 503,
+      "quality": {
+        "actual": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "start": 2005
+          }
+        ],
+        "exact_matches": 2,
+        "expected": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "start": 2005
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 453099520,
+        "initialized": 389627904,
+        "warm": 458096640
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "fbf56c76533cf152d0285f7cbcf42b07d62594664d3acd2b4112c9be9b923ef2",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 1996,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 1984
+          },
+          {
+            "end": 2010,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2005
+          }
+        ],
+        "sequence_len": 503,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.015458,
+          "masking_ms": 0.008375,
+          "model_execution_ms": 68.588917,
+          "recognizers_ms": 0.001375,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00033299999999999996,
+          "tokenization_ms": 0.389458,
+          "total_ms": 69.01325,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.013625000000000002,
+          "masking_ms": 0.009417,
+          "model_execution_ms": 66.08475,
+          "recognizers_ms": 0.001375,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00025,
+          "tokenization_ms": 0.391041,
+          "total_ms": 66.51025000000001,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.013292,
+          "masking_ms": 0.007292,
+          "model_execution_ms": 66.083084,
+          "recognizers_ms": 0.000916,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00033299999999999996,
+          "tokenization_ms": 0.401584,
+          "total_ms": 66.516209,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.013208,
+          "masking_ms": 0.007666000000000001,
+          "model_execution_ms": 65.62941699999999,
+          "recognizers_ms": 0.000917,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000334,
+          "tokenization_ms": 0.393292,
+          "total_ms": 66.054542,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.013417,
+          "masking_ms": 0.008375,
+          "model_execution_ms": 66.417625,
+          "recognizers_ms": 0.003375,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000292,
+          "tokenization_ms": 0.40004199999999995,
+          "total_ms": 66.86087500000001,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 14.842902416543799,
+        "input_bytes_per_second": 29849.07675966958,
+        "input_tokens_per_second": 7465.979915521531
+      },
+      "trace_path": null,
+      "warm_ms": [
+        66.717292,
+        66.915083,
+        66.84774999999999,
+        66.49495800000001,
+        69.64862500000001,
+        67.38900000000001,
+        68.9385,
+        69.41858400000001,
+        67.277708,
+        66.0275,
+        66.303208,
+        68.841208,
+        67.54325,
+        66.426709,
+        66.805667,
+        67.825417,
+        67.262958,
+        66.582458,
+        67.12920799999999,
+        66.422208,
+        66.937125,
+        66.58,
+        67.405542,
+        67.309917,
+        70.56762499999999,
+        66.814166,
+        68.1935,
+        67.235958,
+        66.517667,
+        66.78925
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2011,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 494960640,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 67.0331665,
+        "measured_stage_total_median_ms": 66.516209,
+        "delta_ms": -0.5169574999999895,
+        "delta_percent": -0.771196598627022,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 2,
+      "stderr_file": "validated-baseline-2-near_limit.stderr.txt"
+    },
+    {
+      "confidence": [],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 21.763041,
+      "fixture": "no_entity",
+      "fixture_sha256": "f93293407e5d934f37147030881fb7f7eba8d41a4e4fbed00ae61aa6722c8e31",
+      "initialization": {
+        "session_ms": 295.315375,
+        "tokenizer_ms": 46.980125,
+        "total_ms": 342.459417
+      },
+      "input_bytes": 390,
+      "input_tokens_including_special": 107,
+      "median_ms": 14.5766665,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 15.030666,
+      "processed_tokens_including_overlap_and_special": 107,
+      "quality": {
+        "actual": [],
+        "exact_matches": 0,
+        "expected": [],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8716288,
+        "first_call": 401457152,
+        "initialized": 389234688,
+        "warm": 402767872
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "1bb22dd5b0ba225b31387c7a8e4e27802a8bb7020ae63c24e57ac297097ed616",
+        "placeholder_map_sha256": {},
+        "replacements": [],
+        "sequence_len": 107,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.004084,
+          "masking_ms": 0.000542,
+          "model_execution_ms": 14.548083,
+          "recognizers_ms": 0.000375,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000292,
+          "tokenization_ms": 0.113666,
+          "total_ms": 14.670292,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.00425,
+          "masking_ms": 0.00045900000000000004,
+          "model_execution_ms": 14.8725,
+          "recognizers_ms": 0.00045900000000000004,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000458,
+          "tokenization_ms": 0.11666599999999999,
+          "total_ms": 15.001333,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.004458,
+          "masking_ms": 0.00045900000000000004,
+          "model_execution_ms": 14.7105,
+          "recognizers_ms": 0.000584,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00029099999999999997,
+          "tokenization_ms": 0.112,
+          "total_ms": 14.831875,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.00425,
+          "masking_ms": 0.000625,
+          "model_execution_ms": 14.625166,
+          "recognizers_ms": 0.000417,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00025,
+          "tokenization_ms": 0.11837500000000001,
+          "total_ms": 14.752167,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.004209,
+          "masking_ms": 0.000584,
+          "model_execution_ms": 14.325707999999999,
+          "recognizers_ms": 0.00025,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00029099999999999997,
+          "tokenization_ms": 0.0975,
+          "total_ms": 14.431792,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 68.61357000672511,
+        "input_bytes_per_second": 26759.29230262279,
+        "input_tokens_per_second": 7341.651990719587
+      },
+      "trace_path": null,
+      "warm_ms": [
+        14.460249999999998,
+        14.451084,
+        14.36125,
+        14.222125,
+        14.253709,
+        14.309875,
+        14.190833999999999,
+        14.886750000000001,
+        14.483792000000001,
+        14.637792000000001,
+        14.687083,
+        14.518542,
+        14.4305,
+        14.242166000000001,
+        14.274208999999999,
+        14.264542,
+        14.292625,
+        14.647,
+        14.792583,
+        14.674792,
+        14.884125,
+        14.831375000000001,
+        14.555125,
+        15.030666,
+        14.961584,
+        15.080916,
+        14.889209000000001,
+        14.618915999999999,
+        14.598208,
+        14.699667
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 389,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 428589056,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 14.5766665,
+        "measured_stage_total_median_ms": 14.752167,
+        "delta_ms": 0.17550050000000006,
+        "delta_percent": 1.2039824057167081,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 2,
+      "stderr_file": "validated-baseline-2-no_entity.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 12,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.9996919631958008,
+          "start": 0
+        },
+        {
+          "end": 31,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9998224377632141,
+          "start": 22
+        },
+        {
+          "end": 40,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9996576309204102,
+          "start": 35
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 10.408166,
+      "fixture": "short",
+      "fixture_sha256": "038b591e3ea8c291730d6ce111e70bf44e4bf2b9d4dadd43514a2124aa4f8906",
+      "initialization": {
+        "session_ms": 292.456458,
+        "tokenizer_ms": 47.819792,
+        "total_ms": 340.410834
+      },
+      "input_bytes": 41,
+      "input_tokens_including_special": 10,
+      "median_ms": 3.9776665,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 4.163166,
+      "processed_tokens_including_overlap_and_special": 10,
+      "quality": {
+        "actual": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "start": 35
+          }
+        ],
+        "exact_matches": 3,
+        "expected": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "start": 35
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 401080320,
+        "initialized": 397606912,
+        "warm": 401227776
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "dfc3c8ce98fb8527382d9fe24f6d1cbf23a56437ae5337fd5f8f6817f9c52a25",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[ORG_1]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 12,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 0
+          },
+          {
+            "end": 31,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_1]",
+            "start": 22
+          },
+          {
+            "end": 40,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 35
+          }
+        ],
+        "sequence_len": 10,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.001666,
+          "masking_ms": 0.0043749999999999995,
+          "model_execution_ms": 3.6901249999999997,
+          "recognizers_ms": 0.00041600000000000003,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000209,
+          "tokenization_ms": 0.021917,
+          "total_ms": 3.72,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001167,
+          "masking_ms": 0.003583,
+          "model_execution_ms": 3.761083,
+          "recognizers_ms": 0.00020800000000000001,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000166,
+          "tokenization_ms": 0.020333,
+          "total_ms": 3.7876670000000003,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.002042,
+          "masking_ms": 0.008291000000000001,
+          "model_execution_ms": 3.85875,
+          "recognizers_ms": 0.000417,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000167,
+          "tokenization_ms": 0.025667,
+          "total_ms": 3.896708,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.0012920000000000002,
+          "masking_ms": 0.004125,
+          "model_execution_ms": 3.793041,
+          "recognizers_ms": 0.000334,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000125,
+          "tokenization_ms": 0.028249999999999997,
+          "total_ms": 3.828625,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.001458,
+          "masking_ms": 0.004041,
+          "model_execution_ms": 3.834792,
+          "recognizers_ms": 0.00033299999999999996,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000209,
+          "tokenization_ms": 0.02775,
+          "total_ms": 3.869833,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 251.93544365882016,
+        "input_bytes_per_second": 10329.353190011627,
+        "input_tokens_per_second": 2519.3544365882017
+      },
+      "trace_path": null,
+      "warm_ms": [
+        4.095958,
+        3.902333,
+        4.021916,
+        4.085208,
+        4.0323329999999995,
+        3.795666,
+        4.035375,
+        4.163166,
+        4.032791,
+        3.7882919999999998,
+        3.858459,
+        4.105334,
+        4.182917000000001,
+        4.097625,
+        3.9744580000000003,
+        4.021375,
+        3.8705,
+        3.860417,
+        3.8907920000000003,
+        4.007292,
+        4.099333000000001,
+        3.806375,
+        3.8505000000000003,
+        3.932375,
+        3.947875,
+        4.010334,
+        3.921542,
+        3.899375,
+        3.980875,
+        3.807333
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 41,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 417480704,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 3.9776665,
+        "measured_stage_total_median_ms": 3.828625,
+        "delta_ms": -0.14904150000000005,
+        "delta_percent": -3.7469581725868673,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 2,
+      "stderr_file": "validated-baseline-2-short.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 32,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.998860239982605,
+          "start": 19
+        },
+        {
+          "end": 43,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9980775117874146,
+          "start": 36
+        },
+        {
+          "end": 90,
+          "family": "EMAIL_ADDRESS",
+          "placeholder": "[EMAIL_ADDRESS_1]",
+          "score": 0.949999988079071,
+          "start": 72
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 13.273750000000001,
+      "fixture": "unicode_repeated",
+      "fixture_sha256": "4ce916fc9caff0f3856fdbdfa747f42387a5e3395229e87e571ccf8fa380aa12",
+      "initialization": {
+        "session_ms": 350.689792,
+        "tokenizer_ms": 51.489458,
+        "total_ms": 402.31991700000003
+      },
+      "input_bytes": 100,
+      "input_tokens_including_special": 28,
+      "median_ms": 6.3447914999999995,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 8.311125,
+      "processed_tokens_including_overlap_and_special": 28,
+      "quality": {
+        "actual": [
+          {
+            "end": 32,
+            "family": "PERSON",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "start": 36
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "start": 72
+          }
+        ],
+        "exact_matches": 3,
+        "expected": [
+          {
+            "end": 14,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 32,
+            "family": "PERSON",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "start": 36
+          },
+          {
+            "end": 61,
+            "family": "PERSON",
+            "start": 47
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "start": 72
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [
+          {
+            "end": 14,
+            "family": "PERSON",
+            "start": 0
+          },
+          {
+            "end": 61,
+            "family": "PERSON",
+            "start": 47
+          }
+        ],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8699904,
+        "first_call": 396263424,
+        "initialized": 392101888,
+        "warm": 396804096
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "905227ecc9e7f43826af8fadb4a703d31fda0fc7d866a385772ba7a1a387462e",
+        "placeholder_map_sha256": {
+          "[EMAIL_ADDRESS_1]": "1971b976746bc809648aafaf3c68cb52d5a5145838cb3f3f13dfb0c817dfebe6",
+          "[LOCATION_1]": "4251685e06cab635578c72b1f5f221e9840a05ac4d8f2404be4177aa87f9907d",
+          "[PERSON_1]": "978edf99a5ad71c48bebe7c1b4bbc00dbd9f13347431a8c8665e11f03dd034a0"
+        },
+        "replacements": [
+          {
+            "end": 32,
+            "family": "PERSON",
+            "original_sha256": "978edf99a5ad71c48bebe7c1b4bbc00dbd9f13347431a8c8665e11f03dd034a0",
+            "placeholder": "[PERSON_1]",
+            "start": 19
+          },
+          {
+            "end": 43,
+            "family": "LOCATION",
+            "original_sha256": "4251685e06cab635578c72b1f5f221e9840a05ac4d8f2404be4177aa87f9907d",
+            "placeholder": "[LOCATION_1]",
+            "start": 36
+          },
+          {
+            "end": 90,
+            "family": "EMAIL_ADDRESS",
+            "original_sha256": "1971b976746bc809648aafaf3c68cb52d5a5145838cb3f3f13dfb0c817dfebe6",
+            "placeholder": "[EMAIL_ADDRESS_1]",
+            "start": 72
+          }
+        ],
+        "sequence_len": 28,
+        "windows": 1
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.004459,
+          "masking_ms": 0.007083,
+          "model_execution_ms": 6.387208,
+          "recognizers_ms": 0.008083,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 8.4e-05,
+          "tokenization_ms": 0.040333,
+          "total_ms": 6.449833,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.002542,
+          "masking_ms": 0.006,
+          "model_execution_ms": 5.966791,
+          "recognizers_ms": 0.0067079999999999996,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000167,
+          "tokenization_ms": 0.0485,
+          "total_ms": 6.032875,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.0027080000000000003,
+          "masking_ms": 0.005,
+          "model_execution_ms": 5.941375,
+          "recognizers_ms": 0.007125,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.000375,
+          "tokenization_ms": 0.042542,
+          "total_ms": 6.001,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.002791,
+          "masking_ms": 0.011417,
+          "model_execution_ms": 6.3467080000000005,
+          "recognizers_ms": 0.007125,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00029099999999999997,
+          "tokenization_ms": 0.036458000000000004,
+          "total_ms": 6.407208,
+          "window_preparation_ms": 0.0
+        },
+        {
+          "decoding_ms": 0.0035,
+          "masking_ms": 0.007125,
+          "model_execution_ms": 6.068167,
+          "recognizers_ms": 0.010917000000000001,
+          "stitching_ms": 0.0,
+          "tensor_preparation_ms": 0.00025,
+          "tokenization_ms": 0.064625,
+          "total_ms": 6.15625,
+          "window_preparation_ms": 0.0
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 152.69047176948106,
+        "input_bytes_per_second": 15269.047176948108,
+        "input_tokens_per_second": 4275.33320954547
+      },
+      "trace_path": null,
+      "warm_ms": [
+        6.120125,
+        6.244459,
+        7.411334,
+        8.311125,
+        7.732625,
+        8.684083000000001,
+        6.419333,
+        6.413333000000001,
+        6.0935,
+        7.264334,
+        6.176916,
+        6.131374999999999,
+        6.671625,
+        5.942,
+        6.526790999999999,
+        6.347625,
+        6.07125,
+        7.077666,
+        6.290875,
+        6.4343330000000005,
+        6.341958,
+        6.3565000000000005,
+        6.582333,
+        6.040416,
+        5.914417,
+        6.39475,
+        6.141708,
+        6.187291999999999,
+        6.14025,
+        6.011583
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 100,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 1,
+      "peak_rss_bytes": 415039488,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 6.3447914999999995,
+        "measured_stage_total_median_ms": 6.15625,
+        "delta_ms": -0.18854149999999947,
+        "delta_percent": -2.971594890076368,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 2,
+      "stderr_file": "validated-baseline-2-unicode_repeated.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 2048,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.9967755675315857,
+          "start": 2036
+        },
+        {
+          "end": 2062,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9992377758026123,
+          "start": 2057
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 126.50025000000001,
+      "fixture": "boundary",
+      "fixture_sha256": "3344f07fe242c28ad717e6527587119ca52b185838f81ad6b0cf9579b11156be",
+      "initialization": {
+        "session_ms": 288.220708,
+        "tokenizer_ms": 53.413208,
+        "total_ms": 341.785208
+      },
+      "input_bytes": 2464,
+      "input_tokens_including_special": 616,
+      "median_ms": 110.28025,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 119.868458,
+      "processed_tokens_including_overlap_and_special": 746,
+      "quality": {
+        "actual": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "start": 2057
+          }
+        ],
+        "exact_matches": 2,
+        "expected": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "start": 2057
+          }
+        ],
+        "incorrect_outputs": [],
+        "missed_labels": [],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": []
+      },
+      "rss_snapshots_bytes": {
+        "before": 8716288,
+        "first_call": 481476608,
+        "initialized": 389447680,
+        "warm": 548159488
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "3cc29ea5ea492c3755099011b463da0e9b34b4fd97ab3e782d2a2a99fa81c111",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 2048,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 2036
+          },
+          {
+            "end": 2062,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2057
+          }
+        ],
+        "sequence_len": 616,
+        "windows": 2
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.031042,
+          "masking_ms": 0.011583000000000001,
+          "model_execution_ms": 144.896541,
+          "recognizers_ms": 0.002208,
+          "stitching_ms": 0.010707000000000001,
+          "tensor_preparation_ms": 0.001292,
+          "tokenization_ms": 0.513125,
+          "total_ms": 180.105083,
+          "window_preparation_ms": 6.7780000000000005
+        },
+        {
+          "decoding_ms": 0.033875999999999996,
+          "masking_ms": 0.009833,
+          "model_execution_ms": 119.560542,
+          "recognizers_ms": 0.001791,
+          "stitching_ms": 0.009417,
+          "tensor_preparation_ms": 0.0014169999999999999,
+          "tokenization_ms": 0.5429999999999999,
+          "total_ms": 146.49425,
+          "window_preparation_ms": 23.639583
+        },
+        {
+          "decoding_ms": 0.021415999999999998,
+          "masking_ms": 0.012167,
+          "model_execution_ms": 100.45875,
+          "recognizers_ms": 0.0022500000000000003,
+          "stitching_ms": 0.0115,
+          "tensor_preparation_ms": 0.001334,
+          "tokenization_ms": 0.6244999999999999,
+          "total_ms": 110.964583,
+          "window_preparation_ms": 7.160917
+        },
+        {
+          "decoding_ms": 0.024792,
+          "masking_ms": 0.008916,
+          "model_execution_ms": 99.758083,
+          "recognizers_ms": 0.001833,
+          "stitching_ms": 0.012292,
+          "tensor_preparation_ms": 0.0015,
+          "tokenization_ms": 0.49066599999999994,
+          "total_ms": 109.78204199999999,
+          "window_preparation_ms": 6.810625
+        },
+        {
+          "decoding_ms": 0.021832999999999998,
+          "masking_ms": 0.008917,
+          "model_execution_ms": 99.030916,
+          "recognizers_ms": 0.0027080000000000003,
+          "stitching_ms": 0.008749,
+          "tensor_preparation_ms": 0.001249,
+          "tokenization_ms": 0.494042,
+          "total_ms": 108.942542,
+          "window_preparation_ms": 6.715750000000001
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 8.981416987506158,
+        "input_bytes_per_second": 22130.21145721517,
+        "input_tokens_per_second": 5532.552864303792
+      },
+      "trace_path": null,
+      "warm_ms": [
+        111.63941700000001,
+        124.451875,
+        119.868458,
+        108.18650000000001,
+        109.572416,
+        114.971708,
+        110.531667,
+        109.054667,
+        112.32050000000001,
+        111.14529200000001,
+        112.09700000000001,
+        110.83995900000001,
+        111.280708,
+        110.188541,
+        109.146417,
+        109.534708,
+        112.97925000000001,
+        110.063959,
+        109.735209,
+        108.732667,
+        109.075584,
+        108.84816699999999,
+        107.91966599999999,
+        114.218167,
+        112.254334,
+        115.201792,
+        109.2495,
+        108.315042,
+        108.435042,
+        110.371959
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2041,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 2,
+      "peak_rss_bytes": 570523648,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 110.28025,
+        "measured_stage_total_median_ms": 110.964583,
+        "delta_ms": 0.6843330000000094,
+        "delta_percent": 0.6205399425554425,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 2,
+      "stderr_file": "validated-baseline-2-boundary.stderr.txt"
+    },
+    {
+      "confidence": [
+        {
+          "end": 772,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.8861898183822632,
+          "start": 760
+        },
+        {
+          "end": 791,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9798853993415833,
+          "start": 782
+        },
+        {
+          "end": 800,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998626708984375,
+          "start": 795
+        },
+        {
+          "end": 1574,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9810609817504883,
+          "start": 1562
+        },
+        {
+          "end": 1593,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.966045081615448,
+          "start": 1584
+        },
+        {
+          "end": 1602,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.999849796295166,
+          "start": 1597
+        },
+        {
+          "end": 2376,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9131879806518555,
+          "start": 2364
+        },
+        {
+          "end": 2395,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9119876027107239,
+          "start": 2386
+        },
+        {
+          "end": 2404,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9997257590293884,
+          "start": 2399
+        },
+        {
+          "end": 3178,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.7199178338050842,
+          "start": 3166
+        },
+        {
+          "end": 3197,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9740678668022156,
+          "start": 3188
+        },
+        {
+          "end": 3206,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9996525049209595,
+          "start": 3201
+        },
+        {
+          "end": 3980,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.563504695892334,
+          "start": 3968
+        },
+        {
+          "end": 3999,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_2]",
+          "score": 0.9237555265426636,
+          "start": 3990
+        },
+        {
+          "end": 4008,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998427629470825,
+          "start": 4003
+        },
+        {
+          "end": 4782,
+          "family": "PERSON",
+          "placeholder": "[PERSON_1]",
+          "score": 0.8987553119659424,
+          "start": 4770
+        },
+        {
+          "end": 4801,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.7987143993377686,
+          "start": 4792
+        },
+        {
+          "end": 4810,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9997755885124207,
+          "start": 4805
+        },
+        {
+          "end": 5584,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.9725075364112854,
+          "start": 5572
+        },
+        {
+          "end": 5603,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9948508143424988,
+          "start": 5594
+        },
+        {
+          "end": 5612,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998366832733154,
+          "start": 5607
+        },
+        {
+          "end": 6386,
+          "family": "ORG",
+          "placeholder": "[ORG_1]",
+          "score": 0.720318615436554,
+          "start": 6374
+        },
+        {
+          "end": 6405,
+          "family": "ORG",
+          "placeholder": "[ORG_2]",
+          "score": 0.9984013438224792,
+          "start": 6396
+        },
+        {
+          "end": 6414,
+          "family": "LOCATION",
+          "placeholder": "[LOCATION_1]",
+          "score": 0.9998291730880737,
+          "start": 6409
+        }
+      ],
+      "confidence_drift_within_run": {
+        "comparisons_with_drift": 0,
+        "max_absolute_score_delta": 0.0
+      },
+      "first_call_ms": 289.94820799999997,
+      "fixture": "multi_window",
+      "fixture_sha256": "f73d10ae82485b1d4bcb6af514c0ef66bbd923ec9b53aeb1e30b0bb849267b57",
+      "initialization": {
+        "session_ms": 289.810709,
+        "tokenizer_ms": 48.610041,
+        "total_ms": 338.58891600000004
+      },
+      "input_bytes": 6416,
+      "input_tokens_including_special": 1586,
+      "median_ms": 279.452,
+      "ort_build_info": "ORT Build Info: git-branch=rel-1.24.2, git-commit-id=058787c, build type=Release",
+      "p95_ms": 311.837417,
+      "processed_tokens_including_overlap_and_special": 1976,
+      "quality": {
+        "actual": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "start": 6409
+          }
+        ],
+        "exact_matches": 17,
+        "expected": [
+          {
+            "end": 772,
+            "family": "PERSON",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "PERSON",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "PERSON",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "PERSON",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "ORG",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "PERSON",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "PERSON",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "start": 6409
+          }
+        ],
+        "incorrect_outputs": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "start": 760
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "start": 1562
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "start": 2364
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "start": 3166
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "start": 3990
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "start": 5572
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "start": 6374
+          }
+        ],
+        "missed_labels": [
+          {
+            "end": 772,
+            "family": "PERSON",
+            "start": 760
+          },
+          {
+            "end": 1574,
+            "family": "PERSON",
+            "start": 1562
+          },
+          {
+            "end": 2376,
+            "family": "PERSON",
+            "start": 2364
+          },
+          {
+            "end": 3178,
+            "family": "PERSON",
+            "start": 3166
+          },
+          {
+            "end": 3999,
+            "family": "ORG",
+            "start": 3990
+          },
+          {
+            "end": 5584,
+            "family": "PERSON",
+            "start": 5572
+          },
+          {
+            "end": 6386,
+            "family": "PERSON",
+            "start": 6374
+          }
+        ],
+        "partial_intervals": [],
+        "spurious_outputs": [],
+        "wrong_family_masks": [
+          {
+            "actual": {
+              "end": 772,
+              "family": "ORG",
+              "start": 760
+            },
+            "expected": {
+              "end": 772,
+              "family": "PERSON",
+              "start": 760
+            }
+          },
+          {
+            "actual": {
+              "end": 1574,
+              "family": "ORG",
+              "start": 1562
+            },
+            "expected": {
+              "end": 1574,
+              "family": "PERSON",
+              "start": 1562
+            }
+          },
+          {
+            "actual": {
+              "end": 2376,
+              "family": "ORG",
+              "start": 2364
+            },
+            "expected": {
+              "end": 2376,
+              "family": "PERSON",
+              "start": 2364
+            }
+          },
+          {
+            "actual": {
+              "end": 3178,
+              "family": "ORG",
+              "start": 3166
+            },
+            "expected": {
+              "end": 3178,
+              "family": "PERSON",
+              "start": 3166
+            }
+          },
+          {
+            "actual": {
+              "end": 3999,
+              "family": "LOCATION",
+              "start": 3990
+            },
+            "expected": {
+              "end": 3999,
+              "family": "ORG",
+              "start": 3990
+            }
+          },
+          {
+            "actual": {
+              "end": 5584,
+              "family": "ORG",
+              "start": 5572
+            },
+            "expected": {
+              "end": 5584,
+              "family": "PERSON",
+              "start": 5572
+            }
+          },
+          {
+            "actual": {
+              "end": 6386,
+              "family": "ORG",
+              "start": 6374
+            },
+            "expected": {
+              "end": 6386,
+              "family": "PERSON",
+              "start": 6374
+            }
+          }
+        ]
+      },
+      "rss_snapshots_bytes": {
+        "before": 8732672,
+        "first_call": 483180544,
+        "initialized": 389627904,
+        "warm": 546095104
+      },
+      "sample_count": 30,
+      "semantic": {
+        "anonymized_text_sha256": "44362a7a73de4f9ab3ff2920a105acace2f773d2480248fbebb85733a646fa73",
+        "placeholder_map_sha256": {
+          "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+          "[LOCATION_2]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[ORG_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+          "[ORG_2]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+          "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+        },
+        "replacements": [
+          {
+            "end": 772,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 760
+          },
+          {
+            "end": 791,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 782
+          },
+          {
+            "end": 800,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 795
+          },
+          {
+            "end": 1574,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 1562
+          },
+          {
+            "end": 1593,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 1584
+          },
+          {
+            "end": 1602,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 1597
+          },
+          {
+            "end": 2376,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 2364
+          },
+          {
+            "end": 2395,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 2386
+          },
+          {
+            "end": 2404,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 2399
+          },
+          {
+            "end": 3178,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 3166
+          },
+          {
+            "end": 3197,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 3188
+          },
+          {
+            "end": 3206,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 3201
+          },
+          {
+            "end": 3980,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 3968
+          },
+          {
+            "end": 3999,
+            "family": "LOCATION",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[LOCATION_2]",
+            "start": 3990
+          },
+          {
+            "end": 4008,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 4003
+          },
+          {
+            "end": 4782,
+            "family": "PERSON",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[PERSON_1]",
+            "start": 4770
+          },
+          {
+            "end": 4801,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 4792
+          },
+          {
+            "end": 4810,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 4805
+          },
+          {
+            "end": 5584,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 5572
+          },
+          {
+            "end": 5603,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 5594
+          },
+          {
+            "end": 5612,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 5607
+          },
+          {
+            "end": 6386,
+            "family": "ORG",
+            "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+            "placeholder": "[ORG_1]",
+            "start": 6374
+          },
+          {
+            "end": 6405,
+            "family": "ORG",
+            "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+            "placeholder": "[ORG_2]",
+            "start": 6396
+          },
+          {
+            "end": 6414,
+            "family": "LOCATION",
+            "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+            "placeholder": "[LOCATION_1]",
+            "start": 6409
+          }
+        ],
+        "sequence_len": 1586,
+        "windows": 4
+      },
+      "stage_samples": [
+        {
+          "decoding_ms": 0.065791,
+          "masking_ms": 0.017124999999999998,
+          "model_execution_ms": 270.029083,
+          "recognizers_ms": 0.0018750000000000001,
+          "stitching_ms": 0.022789999999999998,
+          "tensor_preparation_ms": 0.0037099999999999998,
+          "tokenization_ms": 1.139375,
+          "total_ms": 281.14058400000005,
+          "window_preparation_ms": 7.198208
+        },
+        {
+          "decoding_ms": 0.064625,
+          "masking_ms": 0.01675,
+          "model_execution_ms": 271.62954099999996,
+          "recognizers_ms": 0.002041,
+          "stitching_ms": 0.029251,
+          "tensor_preparation_ms": 0.0035839999999999995,
+          "tokenization_ms": 1.190333,
+          "total_ms": 282.965709,
+          "window_preparation_ms": 7.375249999999999
+        },
+        {
+          "decoding_ms": 0.062625,
+          "masking_ms": 0.017791,
+          "model_execution_ms": 279.295417,
+          "recognizers_ms": 0.002375,
+          "stitching_ms": 0.024916,
+          "tensor_preparation_ms": 0.003751,
+          "tokenization_ms": 1.1687500000000002,
+          "total_ms": 290.562708,
+          "window_preparation_ms": 7.363042
+        },
+        {
+          "decoding_ms": 0.073542,
+          "masking_ms": 0.016458,
+          "model_execution_ms": 270.504457,
+          "recognizers_ms": 0.005625000000000001,
+          "stitching_ms": 0.024667,
+          "tensor_preparation_ms": 0.003501,
+          "tokenization_ms": 1.168167,
+          "total_ms": 281.91891699999996,
+          "window_preparation_ms": 7.468125
+        },
+        {
+          "decoding_ms": 0.061084,
+          "masking_ms": 0.018000000000000002,
+          "model_execution_ms": 269.727249,
+          "recognizers_ms": 0.002334,
+          "stitching_ms": 0.023792,
+          "tensor_preparation_ms": 0.003668,
+          "tokenization_ms": 1.226958,
+          "total_ms": 281.20462499999996,
+          "window_preparation_ms": 7.543875
+        }
+      ],
+      "throughput": {
+        "documents_per_second": 3.5444296009101914,
+        "input_bytes_per_second": 22741.060319439788,
+        "input_tokens_per_second": 5621.465347043563
+      },
+      "trace_path": null,
+      "warm_ms": [
+        275.64070899999996,
+        273.564166,
+        275.248166,
+        316.115042,
+        274.833875,
+        273.969166,
+        285.967541,
+        293.27049999999997,
+        274.323333,
+        272.894334,
+        273.89529200000004,
+        272.817542,
+        276.781333,
+        291.202833,
+        275.4995,
+        273.1685,
+        273.73308299999997,
+        288.407167,
+        290.34166700000003,
+        311.837417,
+        280.899166,
+        279.732916,
+        281.869625,
+        289.547166,
+        279.275084,
+        279.628916,
+        279.1165,
+        289.960833,
+        280.693875,
+        279.75004199999995
+      ],
+      "warmup_count": 5,
+      "window_config": {
+        "first_window_end_byte": 2059,
+        "max_tokens": 512,
+        "overlap_tokens": 128
+      },
+      "windows": 4,
+      "peak_rss_bytes": 568033280,
+      "measurement_diagnostic": {
+        "ordinary_warm_p50_ms": 279.452,
+        "measured_stage_total_median_ms": 281.91891699999996,
+        "delta_ms": 2.4669169999999667,
+        "delta_percent": 0.8827694917195039,
+        "interpretation": "diagnostic only; does not isolate disabled-gate overhead"
+      },
+      "repeat": 2,
+      "stderr_file": "validated-baseline-2-multi_window.stderr.txt"
+    }
+  ]
+}

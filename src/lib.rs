@@ -33,7 +33,12 @@
 mod anonymize;
 mod decode;
 mod error;
+mod measurement;
 mod model_bundle;
+
+#[cfg(feature = "profiling")]
+pub use measurement::{InitializationTimings, PipelineTimings};
+use measurement::{Measurement, add_elapsed, elapsed};
 mod profiles;
 mod recognizers;
 mod runtime;
@@ -75,7 +80,7 @@ impl Tiktag {
     pub fn new(profiles_path: &Path) -> Result<Self, TiktagError> {
         let profiles = profiles::Profiles::load(profiles_path)?;
         let profile = profiles.resolve_default();
-        let runtime = runtime::ModelRuntime::load(&profile)?;
+        let runtime = runtime::ModelRuntime::load(&profile, None, &mut Measurement::default())?;
 
         Ok(Self { profile, runtime })
     }
@@ -86,20 +91,72 @@ impl Tiktag {
     /// Placeholder numbering is stable within this call only. The same exact
     /// normalized value in the same family reuses one placeholder.
     pub fn anonymize(&mut self, text: &str) -> Result<TiktagOutput, TiktagError> {
-        let inference = self.runtime.infer(text)?;
+        self.anonymize_inner(text, &mut Measurement::default())
+    }
+
+    fn anonymize_inner(
+        &mut self,
+        text: &str,
+        measurement: &mut Measurement,
+    ) -> Result<TiktagOutput, TiktagError> {
+        let total = measurement.start();
+        let inference = self.runtime.infer(text, measurement)?;
+        let start = measurement.start();
         let mut entities = inference.entities;
         // Keep this sequential for simplicity; if profiling shows need, regex recognizers can
         // run in parallel with inference prep and merge here with the same overlap rules.
         if self.profile.email_recognizer {
             entities.extend(recognizers::email::detect(text));
         }
+        add_elapsed(&mut measurement.pipeline.recognizers_ms, start);
+        let start = measurement.start();
         let anonymization = anonymize::anonymize(text, &entities)?;
+        add_elapsed(&mut measurement.pipeline.masking_ms, start);
+        measurement.pipeline.total_ms = elapsed(total);
 
         Ok(TiktagOutput {
             anonymization,
             sequence_len: inference.sequence_len,
             window_count: inference.window_count,
         })
+    }
+
+    /// Creates an instrumented session. An optional ORT trace prefix enables native
+    /// profiling; use a separate run because tracing changes timings and memory.
+    #[cfg(feature = "profiling")]
+    pub fn new_measured(
+        profiles_path: &Path,
+        ort_trace_prefix: Option<&Path>,
+    ) -> Result<(Self, InitializationTimings), TiktagError> {
+        let mut measurement = Measurement {
+            enabled: true,
+            ..Default::default()
+        };
+        let start = measurement.start();
+        let profile = profiles::Profiles::load(profiles_path)?.resolve_default();
+        let runtime = runtime::ModelRuntime::load(&profile, ort_trace_prefix, &mut measurement)?;
+        measurement.initialization.total_ms = elapsed(start);
+        Ok((Self { profile, runtime }, measurement.initialization))
+    }
+
+    /// Runs the normal pipeline with numeric stage timings, without logging data.
+    #[cfg(feature = "profiling")]
+    pub fn anonymize_measured(
+        &mut self,
+        text: &str,
+    ) -> Result<(TiktagOutput, PipelineTimings), TiktagError> {
+        let mut measurement = Measurement {
+            enabled: true,
+            ..Default::default()
+        };
+        let output = self.anonymize_inner(text, &mut measurement)?;
+        Ok((output, measurement.pipeline))
+    }
+
+    /// Flushes a native ORT trace and returns its filename.
+    #[cfg(feature = "profiling")]
+    pub fn end_profiling(&mut self) -> Result<String, TiktagError> {
+        self.runtime.end_profiling()
     }
 
     /// Returns the logical name of the resolved built-in profile.

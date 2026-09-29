@@ -14,6 +14,8 @@ categories = ["command-line-utilities", "text-processing"]
 include = [
     "src/**/*",
     "benches/anonymize.rs",
+    "performance/fixtures/*.json",
+    "examples/pipeline_bench.rs",
     "models/profiles.toml",
     "README.md",
     "LICENSE",
@@ -49,3 +51,10 @@ tempfile = "3.19.1"
 [[bench]]
 name = "anonymize"
 harness = false
+
+[features]
+profiling = []
+
+[[example]]
+name = "pipeline_bench"
+required-features = ["profiling"]
