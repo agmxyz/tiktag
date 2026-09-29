@@ -2,8 +2,7 @@
 
 Status: #22 and #23 passed their audits and checks; #24 produced a validated local
 baseline and separate native trace. The user reviewed one experiment and chose
-no runtime change; #25 is closed as not planned. #26 is unblocked and documenting
-the result.
+no runtime change; #25 is closed as not planned. #26 completed the final report.
 Earlier `baseline.json` and `ort-profile.json`
 remain draft evidence and are not the validated results.
 
@@ -128,4 +127,4 @@ benchmarks may overlap another benchmark, model test, or build-heavy check.
 - All Python commands must run through `uv`, for example
   `uv run --no-project python scripts/benchmark.py ...`.
 - #24's exclusive measurement window and user review are complete. #25 is closed
-  as not planned; #26 is the final documentation step.
+  as not planned; #26 published the final report and reproduction guide.

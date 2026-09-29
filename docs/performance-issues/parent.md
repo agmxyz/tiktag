@@ -6,7 +6,7 @@ This local file mirrors the self-contained GitHub issue body.
 #22 and #23 passed delegated audits and checks; #24 collected the validated
 baseline and separate trace. After reviewing one concrete experiment, the user
 chose no runtime change; #25 was closed as not planned without a candidate run.
-#26 is preparing the final report. Earlier `baseline.json` and `ort-profile.json`
+#26 completed the final report. Earlier `baseline.json` and `ort-profile.json`
 remain draft evidence; validated results use new paths.
 
 ## Objective and scope
