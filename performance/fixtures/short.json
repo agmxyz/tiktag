@@ -1,0 +1,25 @@
+{
+  "name": "short",
+  "text": "Alice Morgan works at Microsoft in Paris.",
+  "expected": [
+    {
+      "start": 0,
+      "end": 12,
+      "family": "PERSON"
+    },
+    {
+      "start": 22,
+      "end": 31,
+      "family": "ORG"
+    },
+    {
+      "start": 35,
+      "end": 40,
+      "family": "LOCATION"
+    }
+  ],
+  "min_tokens": 8,
+  "max_tokens": 25,
+  "windows": 1,
+  "crosses_first_window": false
+}

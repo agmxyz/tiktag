@@ -1,0 +1,301 @@
+{
+  "boundary": {
+    "windows": 2,
+    "replacements": [
+      {
+        "start": 2036,
+        "end": 2048,
+        "family": "PERSON",
+        "placeholder": "[PERSON_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 2057,
+        "end": 2062,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      }
+    ],
+    "placeholder_map_sha256": {
+      "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+      "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+    },
+    "anonymized_text_sha256": "3cc29ea5ea492c3755099011b463da0e9b34b4fd97ab3e782d2a2a99fa81c111"
+  },
+  "multi_window": {
+    "windows": 4,
+    "replacements": [
+      {
+        "start": 760,
+        "end": 772,
+        "family": "ORG",
+        "placeholder": "[ORG_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 782,
+        "end": 791,
+        "family": "ORG",
+        "placeholder": "[ORG_2]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 795,
+        "end": 800,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      },
+      {
+        "start": 1562,
+        "end": 1574,
+        "family": "ORG",
+        "placeholder": "[ORG_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 1584,
+        "end": 1593,
+        "family": "ORG",
+        "placeholder": "[ORG_2]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 1597,
+        "end": 1602,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      },
+      {
+        "start": 2364,
+        "end": 2376,
+        "family": "ORG",
+        "placeholder": "[ORG_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 2386,
+        "end": 2395,
+        "family": "ORG",
+        "placeholder": "[ORG_2]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 2399,
+        "end": 2404,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      },
+      {
+        "start": 3166,
+        "end": 3178,
+        "family": "ORG",
+        "placeholder": "[ORG_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 3188,
+        "end": 3197,
+        "family": "ORG",
+        "placeholder": "[ORG_2]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 3201,
+        "end": 3206,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      },
+      {
+        "start": 3968,
+        "end": 3980,
+        "family": "PERSON",
+        "placeholder": "[PERSON_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 3990,
+        "end": 3999,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_2]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 4003,
+        "end": 4008,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      },
+      {
+        "start": 4770,
+        "end": 4782,
+        "family": "PERSON",
+        "placeholder": "[PERSON_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 4792,
+        "end": 4801,
+        "family": "ORG",
+        "placeholder": "[ORG_2]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 4805,
+        "end": 4810,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      },
+      {
+        "start": 5572,
+        "end": 5584,
+        "family": "ORG",
+        "placeholder": "[ORG_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 5594,
+        "end": 5603,
+        "family": "ORG",
+        "placeholder": "[ORG_2]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 5607,
+        "end": 5612,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      },
+      {
+        "start": 6374,
+        "end": 6386,
+        "family": "ORG",
+        "placeholder": "[ORG_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 6396,
+        "end": 6405,
+        "family": "ORG",
+        "placeholder": "[ORG_2]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 6409,
+        "end": 6414,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      }
+    ],
+    "placeholder_map_sha256": {
+      "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+      "[LOCATION_2]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+      "[ORG_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b",
+      "[ORG_2]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+      "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+    },
+    "anonymized_text_sha256": "44362a7a73de4f9ab3ff2920a105acace2f773d2480248fbebb85733a646fa73"
+  },
+  "near_limit": {
+    "windows": 1,
+    "replacements": [
+      {
+        "start": 1984,
+        "end": 1996,
+        "family": "PERSON",
+        "placeholder": "[PERSON_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 2005,
+        "end": 2010,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      }
+    ],
+    "placeholder_map_sha256": {
+      "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+      "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+    },
+    "anonymized_text_sha256": "fbf56c76533cf152d0285f7cbcf42b07d62594664d3acd2b4112c9be9b923ef2"
+  },
+  "no_entity": {
+    "windows": 1,
+    "replacements": [],
+    "placeholder_map_sha256": {},
+    "anonymized_text_sha256": "1bb22dd5b0ba225b31387c7a8e4e27802a8bb7020ae63c24e57ac297097ed616"
+  },
+  "short": {
+    "windows": 1,
+    "replacements": [
+      {
+        "start": 0,
+        "end": 12,
+        "family": "PERSON",
+        "placeholder": "[PERSON_1]",
+        "original_sha256": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+      },
+      {
+        "start": 22,
+        "end": 31,
+        "family": "ORG",
+        "placeholder": "[ORG_1]",
+        "original_sha256": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd"
+      },
+      {
+        "start": 35,
+        "end": 40,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1"
+      }
+    ],
+    "placeholder_map_sha256": {
+      "[LOCATION_1]": "5dd272b4f316b776a7b8e3d0894b37e1e42be3d5d3b204b8a5836cc50597a6b1",
+      "[ORG_1]": "c7bac46904be785cd0c965bf5659610044f0cdb4cbb02d2ec398dc56648988fd",
+      "[PERSON_1]": "7878b9e5ff9987ae59cd4234a31376aee6bb1aaed408064bf814a791088dfa2b"
+    },
+    "anonymized_text_sha256": "dfc3c8ce98fb8527382d9fe24f6d1cbf23a56437ae5337fd5f8f6817f9c52a25"
+  },
+  "unicode_repeated": {
+    "windows": 1,
+    "replacements": [
+      {
+        "start": 19,
+        "end": 32,
+        "family": "PERSON",
+        "placeholder": "[PERSON_1]",
+        "original_sha256": "978edf99a5ad71c48bebe7c1b4bbc00dbd9f13347431a8c8665e11f03dd034a0"
+      },
+      {
+        "start": 36,
+        "end": 43,
+        "family": "LOCATION",
+        "placeholder": "[LOCATION_1]",
+        "original_sha256": "4251685e06cab635578c72b1f5f221e9840a05ac4d8f2404be4177aa87f9907d"
+      },
+      {
+        "start": 72,
+        "end": 90,
+        "family": "EMAIL_ADDRESS",
+        "placeholder": "[EMAIL_ADDRESS_1]",
+        "original_sha256": "1971b976746bc809648aafaf3c68cb52d5a5145838cb3f3f13dfb0c817dfebe6"
+      }
+    ],
+    "placeholder_map_sha256": {
+      "[EMAIL_ADDRESS_1]": "1971b976746bc809648aafaf3c68cb52d5a5145838cb3f3f13dfb0c817dfebe6",
+      "[LOCATION_1]": "4251685e06cab635578c72b1f5f221e9840a05ac4d8f2404be4177aa87f9907d",
+      "[PERSON_1]": "978edf99a5ad71c48bebe7c1b4bbc00dbd9f13347431a8c8665e11f03dd034a0"
+    },
+    "anonymized_text_sha256": "905227ecc9e7f43826af8fadb4a703d31fda0fc7d866a385772ba7a1a387462e"
+  }
+}

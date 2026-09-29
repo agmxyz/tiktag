@@ -1,0 +1,9 @@
+{
+  "name": "no_entity",
+  "text": "the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. the book is on the table. ",
+  "expected": [],
+  "min_tokens": 107,
+  "max_tokens": 107,
+  "windows": 1,
+  "crosses_first_window": false
+}
