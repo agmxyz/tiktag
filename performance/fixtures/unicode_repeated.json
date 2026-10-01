@@ -1,0 +1,35 @@
+{
+  "name": "unicode_repeated",
+  "text": "Élodie Martin met José García in Zürich. «Élodie Martin», wrote: elodie@example.com — 🙂.",
+  "expected": [
+    {
+      "start": 0,
+      "end": 14,
+      "family": "PERSON"
+    },
+    {
+      "start": 19,
+      "end": 32,
+      "family": "PERSON"
+    },
+    {
+      "start": 36,
+      "end": 43,
+      "family": "LOCATION"
+    },
+    {
+      "start": 47,
+      "end": 61,
+      "family": "PERSON"
+    },
+    {
+      "start": 72,
+      "end": 90,
+      "family": "EMAIL_ADDRESS"
+    }
+  ],
+  "min_tokens": 20,
+  "max_tokens": 65,
+  "windows": 1,
+  "crosses_first_window": false
+}

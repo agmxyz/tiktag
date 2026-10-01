@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use log::{debug, info};
+use log::info;
 use ndarray::{Array2, Ix3};
 use ort::session::{Session, builder::GraphOptimizationLevel};
 use ort::value::{Outlet, TensorRef};
@@ -18,6 +18,7 @@ use tokenizers::utils::truncation::{TruncationDirection, TruncationParams, Trunc
 
 use crate::decode::{EntitySpan, argmax_label_indices_with_probs, decode_entities};
 use crate::error::TiktagError;
+use crate::measurement::{Measurement, add_elapsed, elapsed};
 use crate::model_bundle::validate_model_bundle;
 use crate::profiles::ResolvedProfile;
 use crate::window::WindowEntities;
@@ -51,7 +52,11 @@ pub(crate) struct ModelRuntime {
 }
 
 impl ModelRuntime {
-    pub(crate) fn load(profile: &ResolvedProfile) -> Result<Self, TiktagError> {
+    pub(crate) fn load(
+        profile: &ResolvedProfile,
+        trace_prefix: Option<&Path>,
+        measurement: &mut Measurement,
+    ) -> Result<Self, TiktagError> {
         validate_model_bundle(&profile.model_dir)?;
 
         let tokenizer_path = profile.model_dir.join("tokenizer.json");
@@ -64,6 +69,7 @@ impl ModelRuntime {
             profile.model_dir.display()
         );
 
+        let start = measurement.start();
         let mut tokenizer = Tokenizer::from_file(&tokenizer_path).map_err(|err| {
             TiktagError::Tokenizer(format!(
                 "failed to load tokenizer at {}: {err}",
@@ -79,10 +85,12 @@ impl ModelRuntime {
             ))
         })?;
 
+        measurement.initialization.tokenizer_ms = elapsed(start);
         let labels = load_labels(&config_path)?;
 
         // Initialize ORT once per process. On macOS, CoreML compile cache is
         // not persisted to disk, so short-lived CLI runs re-pay compile cost.
+        let start = measurement.start();
         ort::init().commit();
 
         let session_builder = Session::builder().map_err(ort_error)?;
@@ -102,6 +110,11 @@ impl ModelRuntime {
             info!("cpu execution provider (default)");
         }
 
+        let session_builder = if let Some(prefix) = trace_prefix {
+            session_builder.with_profiling(prefix).map_err(ort_error)?
+        } else {
+            session_builder
+        };
         let session = session_builder
             .with_optimization_level(GraphOptimizationLevel::Level3)
             .map_err(ort_error)?
@@ -110,6 +123,7 @@ impl ModelRuntime {
                 TiktagError::OrtRuntime(format!("failed to create ONNX Runtime session: {err}"))
             })?;
 
+        measurement.initialization.session_ms = elapsed(start);
         let logits_output_name =
             validate_logits_output_metadata(&profile.name, &labels, session.outputs())?;
 
@@ -132,15 +146,25 @@ impl ModelRuntime {
         })
     }
 
-    pub(crate) fn infer(&mut self, text: &str) -> Result<InferenceResult, TiktagError> {
+    #[cfg(feature = "profiling")]
+    pub(crate) fn end_profiling(&mut self) -> Result<String, TiktagError> {
+        self.session.end_profiling().map_err(ort_error)
+    }
+
+    pub(crate) fn infer(
+        &mut self,
+        text: &str,
+        measurement: &mut Measurement,
+    ) -> Result<InferenceResult, TiktagError> {
         info!("running inference on {} input bytes", text.len());
-        let show_tokens = log::log_enabled!(target: "tokens", log::Level::Debug);
 
         // Tokenize without truncation to measure true sequence length.
+        let start = measurement.start();
         let encoding = self
             .tokenizer
             .encode(text, true)
             .map_err(|err| TiktagError::Tokenizer(format!("tokenization failed: {err}")))?;
+        add_elapsed(&mut measurement.pipeline.tokenization_ms, start);
         let seq_len = encoding.len();
         if seq_len == 0 {
             return Err(TiktagError::Tokenizer(
@@ -150,7 +174,7 @@ impl ModelRuntime {
         info!("encoded sequence length: {seq_len}");
 
         if seq_len <= self.max_tokens {
-            let entities = self.infer_single_encoding(text, &encoding, show_tokens)?;
+            let entities = self.infer_single_encoding(text, &encoding, measurement)?;
             Ok(InferenceResult {
                 entities,
                 sequence_len: seq_len,
@@ -164,7 +188,7 @@ impl ModelRuntime {
                 "input exceeds max_tokens={}, using sliding window (overlap_tokens={})",
                 self.max_tokens, self.overlap_tokens
             );
-            let result = self.infer_windowed(text, show_tokens)?;
+            let result = self.infer_windowed(text, measurement)?;
             Ok(InferenceResult {
                 entities: result.entities,
                 sequence_len: seq_len,
@@ -179,10 +203,11 @@ impl ModelRuntime {
         &mut self,
         text: &str,
         encoding: &tokenizers::Encoding,
-        show_tokens: bool,
+        measurement: &mut Measurement,
     ) -> Result<Vec<EntitySpan>, TiktagError> {
         let seq_len = encoding.len();
 
+        let start = measurement.start();
         let input_ids = Array2::from_shape_vec(
             (1, seq_len),
             encoding.get_ids().iter().map(|&id| i64::from(id)).collect(),
@@ -202,8 +227,12 @@ impl ModelRuntime {
             TiktagError::OrtRuntime(format!("failed to build attention_mask tensor: {err}"))
         })?;
 
-        let outputs = if self.has_token_type_ids {
-            let token_type_ids = Array2::<i64>::zeros((1, seq_len));
+        let token_type_ids = self
+            .has_token_type_ids
+            .then(|| Array2::<i64>::zeros((1, seq_len)));
+        add_elapsed(&mut measurement.pipeline.tensor_preparation_ms, start);
+        let start = measurement.start();
+        let outputs = if let Some(token_type_ids) = token_type_ids {
             self.session
                 .run(ort::inputs! {
                     "input_ids" => TensorRef::from_array_view(input_ids.view()).map_err(ort_error)?,
@@ -220,6 +249,8 @@ impl ModelRuntime {
                 .map_err(ort_error)?
         };
 
+        add_elapsed(&mut measurement.pipeline.model_execution_ms, start);
+        let start = measurement.start();
         let logits = outputs[0].try_extract_array::<f32>().map_err(|err| {
             TiktagError::OrtRuntime(format!("failed to extract logits as f32 tensor: {err}"))
         })?;
@@ -237,20 +268,8 @@ impl ModelRuntime {
 
         let predictions = argmax_label_indices_with_probs(logits);
 
-        if show_tokens {
-            for (index, token) in encoding.get_tokens().iter().enumerate() {
-                let (label_idx, prob) = predictions.get(index).copied().unwrap_or((0, 0.0));
-                let label = self
-                    .labels
-                    .get(label_idx)
-                    .map(String::as_str)
-                    .unwrap_or("<unknown>");
-                let (start, end) = encoding.get_offsets().get(index).copied().unwrap_or((0, 0));
-                debug!(target: "tokens", "{index:>3}: {token:<20} {label:<32} (prob={prob:.2}) [{start}..{end}]");
-            }
-        }
-
         let entities = decode_entities(text, encoding, &predictions, &self.labels);
+        add_elapsed(&mut measurement.pipeline.decoding_ms, start);
         Ok(entities)
     }
 
@@ -259,8 +278,9 @@ impl ModelRuntime {
     fn infer_windowed(
         &mut self,
         text: &str,
-        show_tokens: bool,
+        measurement: &mut Measurement,
     ) -> Result<WindowedInferenceResult, TiktagError> {
+        let start = measurement.start();
         let mut windowed_tokenizer = self.tokenizer.clone();
         windowed_tokenizer
             .with_truncation(Some(TruncationParams {
@@ -283,13 +303,11 @@ impl ModelRuntime {
         encodings.extend(overflow);
         info!("sliding window: {} windows", encodings.len());
 
+        add_elapsed(&mut measurement.pipeline.window_preparation_ms, start);
         let mut window_results = Vec::with_capacity(encodings.len());
         for (i, encoding) in encodings.iter().enumerate() {
-            if show_tokens {
-                debug!(target: "tokens", "--- window {i} ---");
-            }
-
-            let entities = self.infer_single_encoding(text, encoding, show_tokens)?;
+            let entities = self.infer_single_encoding(text, encoding, measurement)?;
+            let start = measurement.start();
             let (emit_start, emit_end) =
                 compute_emit_region(text, encoding, i, encodings.len(), self.overlap_tokens);
             info!(
@@ -302,9 +320,12 @@ impl ModelRuntime {
                 emit_start,
                 emit_end,
             });
+            add_elapsed(&mut measurement.pipeline.stitching_ms, start);
         }
 
+        let start = measurement.start();
         let entities = crate::window::stitch(window_results);
+        add_elapsed(&mut measurement.pipeline.stitching_ms, start);
         info!("stitched to {} entities", entities.len());
 
         Ok(WindowedInferenceResult {
